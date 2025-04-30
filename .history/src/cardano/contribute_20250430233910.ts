@@ -26,7 +26,7 @@ import {
       const contributeCompileCode = readValidator("contribute.contribute.spend");
       const constributeScriptCbor = applyParamsToScript(
         contributeCompileCode,
-        [pubkeyAdmin, stringToHex(name), minimum, contributeSelection, other],
+        [pubkeyAdmin, stringToHex(name), minimum, contributeSelection],
       );
       const scriptAddr = serializePlutusScript(
         { code: constributeScriptCbor, version: "V3" },

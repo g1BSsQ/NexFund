@@ -16,7 +16,7 @@ import {
     getTxBuilder
   } from "./adapter";
   
-  export async function contribute(other: number,  wallet: BrowserWallet, admin: string, assets: any, amount: number, minimum: number, name: string, contributeSelection: number) {
+  export async function contribute(wallet: BrowserWallet, admin: string, assets: any, amount: number, minimum: number, name: string, contributeSelection: number) {
     try {
       const { utxos, walletAddress} = await getWalletInfoForTx(
         wallet
@@ -26,7 +26,7 @@ import {
       const contributeCompileCode = readValidator("contribute.contribute.spend");
       const constributeScriptCbor = applyParamsToScript(
         contributeCompileCode,
-        [pubkeyAdmin, stringToHex(name), minimum, contributeSelection, other],
+        [pubkeyAdmin, stringToHex(name), minimum, contributeSelection],
       );
       const scriptAddr = serializePlutusScript(
         { code: constributeScriptCbor, version: "V3" },

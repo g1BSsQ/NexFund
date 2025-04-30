@@ -35,7 +35,7 @@ async function exportMoney(
     const contributeCompileCode = readValidator("contribute.contribute.spend");
     const constributeScriptCbor = applyParamsToScript(
       contributeCompileCode,
-      [pubkeyAdmin, name, minimum, contributeSelection, other],
+      [pubkeyAdmin, name, minimum, contributeSelection],
     );
     const scriptAddr = serializePlutusScript(
       { code: constributeScriptCbor, version: "V3" },
