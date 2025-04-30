@@ -1,0 +1,215 @@
+{
+  "preamble": {
+    "title": "thomas/smartcontract",
+    "description": "Aiken contracts for project 'thomas/smartcontract'",
+    "version": "0.0.0",
+    "plutusVersion": "v3",
+    "compiler": {
+      "name": "Aiken",
+      "version": "v1.1.0+be31a7c"
+    },
+    "license": "Apache-2.0"
+  },
+  "validators": [
+    {
+      "title": "contribute.contribute.spend",
+      "datum": {
+        "title": "datum_opt",
+        "schema": {
+          "$ref": "#/definitions/contribute~1Datum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/contribute~1Redeemer"
+        }
+      },
+      "parameters": [
+        {
+          "title": "admin",
+          "schema": {
+            "$ref": "#/definitions/VerificationKeyHash"
+          }
+        },
+        {
+          "title": "name",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        },
+        {
+          "title": "minimum",
+          "schema": {
+            "$ref": "#/definitions/Int"
+          }
+        }
+      ],
+      "compiledCode": "590141010100323232323232232232232253330083232323232533300d3370e900118071baa001132323253330103370e900018089baa0051323253330153017002153330123370e900018099baa0031323232323253330173371e91010b4578706f72744d6f6e657900375c603660326ea80304c94ccc0614ccc06000840045280a5110033371e6eb8c06cc070c070c064dd500280a8b1980100180a198008011bae3019301a3017375400644646600200200644a66603600229404c94ccc064cdc79bae301d00200414a2266006006002603a0026eb0c05cc060c060c060c060c060c060c060c060c054dd5005180b180a1baa0031616375c602a00260246ea801458c04cc050008c048004c03cdd50008b1808180880118078009807801180680098051baa00114984d958dd68009bae001375c002ae6955ceaab9e5573eae855d101",
+      "hash": "3ddc3cfd1decea121309218720706a51cb469a6facb142d8f5b77d3d"
+    },
+    {
+      "title": "contribute.contribute.else",
+      "parameters": [
+        {
+          "title": "admin",
+          "schema": {
+            "$ref": "#/definitions/VerificationKeyHash"
+          }
+        },
+        {
+          "title": "name",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        },
+        {
+          "title": "minimum",
+          "schema": {
+            "$ref": "#/definitions/Int"
+          }
+        }
+      ],
+      "compiledCode": "590141010100323232323232232232232253330083232323232533300d3370e900118071baa001132323253330103370e900018089baa0051323253330153017002153330123370e900018099baa0031323232323253330173371e91010b4578706f72744d6f6e657900375c603660326ea80304c94ccc0614ccc06000840045280a5110033371e6eb8c06cc070c070c064dd500280a8b1980100180a198008011bae3019301a3017375400644646600200200644a66603600229404c94ccc064cdc79bae301d00200414a2266006006002603a0026eb0c05cc060c060c060c060c060c060c060c060c054dd5005180b180a1baa0031616375c602a00260246ea801458c04cc050008c048004c03cdd50008b1808180880118078009807801180680098051baa00114984d958dd68009bae001375c002ae6955ceaab9e5573eae855d101",
+      "hash": "3ddc3cfd1decea121309218720706a51cb469a6facb142d8f5b77d3d"
+    },
+    {
+      "title": "vote.vote.spend",
+      "datum": {
+        "title": "datum_otp",
+        "schema": {
+          "$ref": "#/definitions/vote~1Datum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/vote~1Redeemer"
+        }
+      },
+      "parameters": [
+        {
+          "title": "admin",
+          "schema": {
+            "$ref": "#/definitions/VerificationKeyHash"
+          }
+        },
+        {
+          "title": "name",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        }
+      ],
+      "compiledCode": "59020201010032323232323232232232253330063232323232533300b3370e900118061baa0011323232533300e3370e900018079baa0051323253330133016002153330103370e900018089baa00313232323232323232323232323232533301e3371e911067570646174650000110081533301e3371e9101066578706f7274000011533301e533301e0081533301e0021533301e003133301e0074a09445280a5014a0294454ccc07801c54ccc078ccc078021282511533301e003100214a029405280b1bae3009301f37540286600401460066eb8c020c078dd500619800804980100c91299980e19baf323300100100322533302100114c103d87a80001323253330203375e601860446ea80080144c020cc0900092f5c0266008008002604a004604600298103d87a800014a229408c008cc078c008cc078dd4800a5eb80cc079300103d87a80004bd701ba548000cc008010054cc00400cdd71801180c1baa00622323300100100322533301c00114a0264a66603466e3cdd7180f8010020a51133003003001301f0012301a001375860306032603260326032603260320046eb0c05c004c05cc05cc04cdd5005180a98091baa0031616375c602800260206ea801458c048c04c008c044004c034dd50008b1807980800118070009807001180600098041baa00114984d958dd70009bae0015734aae7555cf2ab9f5740ae855d101",
+      "hash": "69a5b9b6ceea5bba1535a7881c2e01d40360dfdc808d9476cfa808b0"
+    },
+    {
+      "title": "vote.vote.else",
+      "parameters": [
+        {
+          "title": "admin",
+          "schema": {
+            "$ref": "#/definitions/VerificationKeyHash"
+          }
+        },
+        {
+          "title": "name",
+          "schema": {
+            "$ref": "#/definitions/ByteArray"
+          }
+        }
+      ],
+      "compiledCode": "59020201010032323232323232232232253330063232323232533300b3370e900118061baa0011323232533300e3370e900018079baa0051323253330133016002153330103370e900018089baa00313232323232323232323232323232533301e3371e911067570646174650000110081533301e3371e9101066578706f7274000011533301e533301e0081533301e0021533301e003133301e0074a09445280a5014a0294454ccc07801c54ccc078ccc078021282511533301e003100214a029405280b1bae3009301f37540286600401460066eb8c020c078dd500619800804980100c91299980e19baf323300100100322533302100114c103d87a80001323253330203375e601860446ea80080144c020cc0900092f5c0266008008002604a004604600298103d87a800014a229408c008cc078c008cc078dd4800a5eb80cc079300103d87a80004bd701ba548000cc008010054cc00400cdd71801180c1baa00622323300100100322533301c00114a0264a66603466e3cdd7180f8010020a51133003003001301f0012301a001375860306032603260326032603260320046eb0c05c004c05cc05cc04cdd5005180a98091baa0031616375c602800260206ea801458c048c04c008c044004c034dd50008b1807980800118070009807001180600098041baa00114984d958dd70009bae0015734aae7555cf2ab9f5740ae855d101",
+      "hash": "69a5b9b6ceea5bba1535a7881c2e01d40360dfdc808d9476cfa808b0"
+    }
+  ],
+  "definitions": {
+    "ByteArray": {
+      "dataType": "bytes"
+    },
+    "Int": {
+      "dataType": "integer"
+    },
+    "VerificationKeyHash": {
+      "title": "VerificationKeyHash",
+      "dataType": "bytes"
+    },
+    "contribute/Datum": {
+      "title": "Datum",
+      "anyOf": [
+        {
+          "title": "Datum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "amount",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "contributor",
+              "$ref": "#/definitions/VerificationKeyHash"
+            },
+            {
+              "title": "admin",
+              "$ref": "#/definitions/VerificationKeyHash"
+            }
+          ]
+        }
+      ]
+    },
+    "contribute/Redeemer": {
+      "title": "Redeemer",
+      "anyOf": [
+        {
+          "title": "Redeemer",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "actionChoice",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
+    },
+    "vote/Datum": {
+      "title": "Datum",
+      "anyOf": [
+        {
+          "title": "Datum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "voter",
+              "$ref": "#/definitions/VerificationKeyHash"
+            },
+            {
+              "title": "vote",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
+    },
+    "vote/Redeemer": {
+      "title": "Redeemer",
+      "anyOf": [
+        {
+          "title": "Redeemer",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "actionChoice",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
