@@ -49,7 +49,7 @@ pub fn check_refund_completed(
   user_utxo_exists 
 }
 
-validator contribute(admin: VerificationKeyHash, name: ByteArray, minimum: Int) {
+validator contribute(admin: VerificationKeyHash, name: ByteArray, minimum: Int, contributeSelection: Int) {
   spend(datum_opt: Option<Datum>, redeemer: Redeemer, _out_ref: OutputReference, tx: Transaction) -> Bool {
     expect Some(datum) = datum_opt
     
