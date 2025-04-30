@@ -26,7 +26,6 @@ async function exportMoney(
     receiver: string,
     amountReceiver: number,
     amountSelect: number,
-    contributeSelection: number
     ){
     const {utxos, walletAddress, collateral} = await getWalletInfoForTx(wallet);
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;

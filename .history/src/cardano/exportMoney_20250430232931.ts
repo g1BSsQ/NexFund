@@ -26,7 +26,6 @@ async function exportMoney(
     receiver: string,
     amountReceiver: number,
     amountSelect: number,
-    contributeSelection: number
     ){
     const {utxos, walletAddress, collateral} = await getWalletInfoForTx(wallet);
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
@@ -34,7 +33,7 @@ async function exportMoney(
     const contributeCompileCode = readValidator("contribute.contribute.spend");
     const constributeScriptCbor = applyParamsToScript(
       contributeCompileCode,
-      [pubkeyAdmin, name, minimum, contributeSelection],
+      [pubkeyAdmin, name, minimum, contribute],
     );
     const scriptAddr = serializePlutusScript(
       { code: constributeScriptCbor, version: "V3" },
