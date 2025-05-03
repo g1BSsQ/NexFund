@@ -17,14 +17,14 @@ import {
 } from "./adapter";
 
 export async function contribute(
-  //other: number,
+  other: number,
   wallet: BrowserWallet,
   admin: string,
   assets: any,
   amount: number,
- // minimum: number,
+  minimum: number,
   name: string,
-//  contributeSelection: number,
+  contributeSelection: number,
   proposalEligibilityText: string,
   cooldownPeriod: number,
   visibility: number,
@@ -48,7 +48,7 @@ export async function contribute(
         proposalEligibilityText,
         minContribution,
         cooldownPeriod,
-        visibility,
+        visibility
         
       ],
     );

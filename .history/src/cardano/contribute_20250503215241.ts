@@ -4,10 +4,8 @@ import {
     deserializeAddress,
     mConStr0,
     MeshTxBuilder,
-    MeshValue,
     serializePlutusScript,
     stringToHex,
-    Transaction,
     BrowserWallet
   } from "@meshsdk/core";
   
@@ -17,40 +15,36 @@ import {
     readValidator,
     getTxBuilder
   } from "./adapter";
-
-
-  async function vote(wallet: BrowserWallet, admin: string, name: string, vote: string, assets: Asset[], id:  number, amount: number, timeStamp: number) {
+  
+  export async function contribute(other: number, 
+     wallet: BrowserWallet, admin: string, assets: any, amount: number, minimum: number, name: string, contributeSelection: number) {
     try {
-      const { utxos, walletAddress, collateral } = await getWalletInfoForTx(
+      const { utxos, walletAddress} = await getWalletInfoForTx(
         wallet
       );
-      const pubkeyVoter = deserializeAddress(walletAddress).pubKeyHash;
+      const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
       const pubkeyAdmin = deserializeAddress(admin).pubKeyHash;
-  
-      const voteCompileCode = readValidator("vote.vote.spend");
-      const voteScriptCbor = applyParamsToScript(
-        voteCompileCode,
-        [id, pubkeyAdmin, stringToHex(name), amount, timeStamp],
+      const contributeCompileCode = readValidator("contribute.contribute.spend");
+      const constributeScriptCbor = applyParamsToScript(
+        contributeCompileCode,
+        [pubkeyAdmin, stringToHex(name), minimum, contributeSelection, other],
       );
-  
       const scriptAddr = serializePlutusScript(
-        { code: voteScriptCbor, version: "V3" },
+        { code: constributeScriptCbor, version: "V3" },
         undefined,
         0,
       ).address;
-      console.log("Script Address : ", scriptAddr);
-  
       const txBuilder = getTxBuilder();
-      const datum = mConStr0([pubkeyVoter, vote] );
+      const datum = mConStr0([ amount, pubkeyContributor, pubkeyAdmin] );
       
       await txBuilder
       .spendingPlutusScriptV3()
       .txOut(scriptAddr, assets)
       .txOutInlineDatumValue(datum)
       .changeAddress(walletAddress)
-      .requiredSignerHash(pubkeyVoter)
+      .requiredSignerHash(pubkeyContributor)
       .selectUtxosFrom(utxos)
-      .setNetwork("preprod")
+      .setNetwork("preprod");
       
       const tx =  await txBuilder.complete();
       const signedTx = await wallet.signTx(tx, true);
@@ -61,3 +55,6 @@ import {
       throw new Error("Error in contribute function: " + error);
     }
   }
+  
+  
+  

@@ -30,7 +30,7 @@ import {
       const voteCompileCode = readValidator("vote.vote.spend");
       const voteScriptCbor = applyParamsToScript(
         voteCompileCode,
-        [id, pubkeyAdmin, stringToHex(name), amount, timeStamp],
+        [pubkeyAdmin, name],
       );
   
       const scriptAddr = serializePlutusScript(

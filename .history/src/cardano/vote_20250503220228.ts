@@ -19,7 +19,7 @@ import {
   } from "./adapter";
 
 
-  async function vote(wallet: BrowserWallet, admin: string, name: string, vote: string, assets: Asset[], id:  number, amount: number, timeStamp: number) {
+  async function vote(wallet: BrowserWallet, admin: string, name: string, vote: string, assets: Asset[], id:  number, amount: number) {
     try {
       const { utxos, walletAddress, collateral } = await getWalletInfoForTx(
         wallet
@@ -30,7 +30,7 @@ import {
       const voteCompileCode = readValidator("vote.vote.spend");
       const voteScriptCbor = applyParamsToScript(
         voteCompileCode,
-        [id, pubkeyAdmin, stringToHex(name), amount, timeStamp],
+        [pubkeyAdmin, name],
       );
   
       const scriptAddr = serializePlutusScript(

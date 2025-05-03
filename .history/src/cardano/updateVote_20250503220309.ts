@@ -20,7 +20,7 @@ import {
     getUtxoPlutusByTxHash
   } from "./adapter";
   
-  async function contribute(wallet: BrowserWallet, txHash: string, admin: string, assets: Asset[], name: string, vote: string, id: number, amount: number, timeStamp: number) {
+  async function contribute(wallet: BrowserWallet, txHash: string, admin: string, assets: Asset[], name: string, vote: string, id) {
     try {
       const { utxos, walletAddress, collateral } = await getWalletInfoForTx(
         wallet,
@@ -31,7 +31,7 @@ import {
       const voteCompileCode = readValidator("vote.vote.spend");
       const voteScriptCbor = applyParamsToScript(
         voteCompileCode,
-        [id, pubkeyAdmin, stringToHex(name), amount, timeStamp],
+        [pubkeyAdmin, name],
       );
   
       const scriptAddr = serializePlutusScript(

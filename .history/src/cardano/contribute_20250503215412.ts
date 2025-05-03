@@ -17,21 +17,15 @@ import {
 } from "./adapter";
 
 export async function contribute(
-  //other: number,
+  other: number,
   wallet: BrowserWallet,
   admin: string,
   assets: any,
   amount: number,
- // minimum: number,
+  minimum: number,
   name: string,
-//  contributeSelection: number,
+  contributeSelection: number,
   proposalEligibilityText: string,
-  cooldownPeriod: number,
-  visibility: number,
-  minContribution: number,
-  approvalThreshold: number,
-  votingMechasnism:string,
-
 ) {
   try {
     const { utxos, walletAddress } = await getWalletInfoForTx(
@@ -42,15 +36,7 @@ export async function contribute(
     const contributeCompileCode = readValidator("contribute.contribute.spend");
     const constributeScriptCbor = applyParamsToScript(
       contributeCompileCode,
-      [pubkeyAdmin, stringToHex(name),
-        approvalThreshold,
-        votingMechasnism,
-        proposalEligibilityText,
-        minContribution,
-        cooldownPeriod,
-        visibility,
-        
-      ],
+      [pubkeyAdmin, stringToHex(name), minimum, contributeSelection, other],
     );
     const scriptAddr = serializePlutusScript(
       { code: constributeScriptCbor, version: "V3" },

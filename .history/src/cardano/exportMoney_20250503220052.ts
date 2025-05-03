@@ -26,8 +26,8 @@ async function exportMoney(
     receiver: string,
     amountReceiver: number,
     amountSelect: number,
-  //  contributeSelection: number,
-    //other: number,
+    contributeSelection: number,
+    other: number,
     proposalEligibilityText: string,
   cooldownPeriod: number,
   visibility: number,
@@ -41,15 +41,7 @@ async function exportMoney(
     const contributeCompileCode = readValidator("contribute.contribute.spend");
     const constributeScriptCbor = applyParamsToScript(
       contributeCompileCode,
-      [pubkeyAdmin, stringToHex(name),
-        approvalThreshold,
-        votingMechasnism,
-        proposalEligibilityText,
-        minContribution,
-        cooldownPeriod,
-        visibility,
-        
-      ],
+      [pubkeyAdmin, name, minimum, contributeSelection, other],
     );
     const scriptAddr = serializePlutusScript(
       { code: constributeScriptCbor, version: "V3" },

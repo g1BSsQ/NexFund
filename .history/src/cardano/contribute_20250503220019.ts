@@ -17,7 +17,7 @@ import {
 } from "./adapter";
 
 export async function contribute(
-  //other: number,
+  other: number,
   wallet: BrowserWallet,
   admin: string,
   assets: any,
