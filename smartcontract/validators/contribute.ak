@@ -57,7 +57,7 @@ validator contribute(
   proposalEligibilityText: ByteArray,
   minContribution: Int,
   coolDownPeriod: Int,
-  visibilityPeriod: Int,
+  visibilityPeriod: ByteArray,
 ) {
   spend(datum_opt: Option<Datum>, redeemer: Redeemer, _out_ref: OutputReference, tx: Transaction) -> Bool {
     expect Some(datum) = datum_opt
