@@ -52,7 +52,7 @@ pub fn check_refund_completed(
 validator contribute(
   admin: VerificationKeyHash,
   name: ByteArray,
-  approvalThreshold: ByteArray,
+  approvalThreshold: Int,
   votingMechasnism: ByteArray,
   proposalEligibilityText: ByteArray,
   minContribution: Int,
