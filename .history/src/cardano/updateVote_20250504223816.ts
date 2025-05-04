@@ -35,7 +35,7 @@ import {
       );
   
       const scriptAddr = serializePlutusScript(
-        { code: voteScriptCbor, version: "V3" },
+        { code: constributeScriptCbor, version: "V3" },
         undefined,
         0,
       ).address;

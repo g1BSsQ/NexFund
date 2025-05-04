@@ -31,11 +31,11 @@ import {
       const voteCompileCode = readValidator("vote.vote.spend");
       const voteScriptCbor = applyParamsToScript(
         voteCompileCode,
-        [(id), pubkeyAdmin, stringToHex(name), amount, stringToHex(timeStamp)],
+        [(id, pubkeyAdmin, stringToHex(name), stringToHex(amount), stringToHex(timeStamp)],
       );
   
       const scriptAddr = serializePlutusScript(
-        { code: voteScriptCbor, version: "V3" },
+        { code: constributeScriptCbor, version: "V3" },
         undefined,
         0,
       ).address;

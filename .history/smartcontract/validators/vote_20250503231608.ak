@@ -26,7 +26,7 @@ fn find_output_address(outputs: List<Output>, addrExport: Address) -> Bool {
   }
 }
 
-validator vote(id: Int, admin: VerificationKeyHash, name: ByteArray, amount: Int, timeStamp: ByteArray) {
+validator vote(id: ByteArray, admin: VerificationKeyHash, name: ByteArray, amount: Int, timeStamp: Int) {
   spend(
     datum_otp: Option<Datum>,
     redeemer: Redeemer,
