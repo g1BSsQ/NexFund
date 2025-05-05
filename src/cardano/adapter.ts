@@ -1,18 +1,13 @@
 import {
     BlockfrostProvider,
-    MeshTxBuilder,
-    MeshWallet,
-    PlutusScript,
-    serializePlutusScript,
-    UTxO
-    ,resolvePlutusScriptAddress,
     BrowserWallet,
+    IWallet,
+    MeshTxBuilder,
+    UTxO
   } from "@meshsdk/core";
-  import { applyParamsToScript } from "@meshsdk/core-csl";
-  import blueprint from "./plutus.json";
-  import { Script } from "node:vm";
+
   import plutus from '../../smartcontract/plutus.json';
-  export const blockchainProvider = new BlockfrostProvider('preprod2DQWsQjqnzLW9swoBQujfKBIFyYILBiL');
+  export const blockchainProvider = new BlockfrostProvider('previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc');
   
   export function readValidator(title: string): string {
       const validator = plutus.validators.find(v => v.title === title);
@@ -39,13 +34,9 @@ import {
   
   
   export async function getWalletInfoForTx(wallet: BrowserWallet) {
-    const utxos = await wallet.getUtxos();
-    const walletAddress = (await wallet.getUsedAddresses())[0];
     const collateral = (await wallet.getCollateral())[0];
+    const walletAddress = (await wallet.getUsedAddresses())[0];
+    const utxos = await blockchainProvider.fetchAddressUTxOs(walletAddress);
+
     return { utxos, walletAddress, collateral };
   }
-async function main(){
-    console.log("hello world");
-    
-}
-main();

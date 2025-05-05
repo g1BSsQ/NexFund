@@ -41,12 +41,12 @@ export function Sidebar({ className }: SidebarProps) {
       title: 'Tổng quan',
     },
     {
-      href: '/finances',
+      href: `/finances/${address}`,
       icon: Wallet,
       title: 'Tài chính',
     },
     {
-      href: '/profile',
+      href: `/profile/${address}`,
       icon: User,
       title: 'Hồ sơ',
     },

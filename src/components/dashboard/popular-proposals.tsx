@@ -1,3 +1,4 @@
+"use client";
 import { CheckCircle2, XCircle, Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -11,14 +12,20 @@ interface Proposal {
   status: ProposalStatus;
 }
 
-const proposals: Proposal[] = [
-  { id: "1", title: "Phát triển ứng dụng di động tương thích", votes: 157, status: "approved" },
-  { id: "2", title: "Tổ chức hội thảo trực tuyến về DeFi", votes: 89, status: "pending" },
-  { id: "3", title: "Đầu tư vào nghiên cứu an ninh blockchain", votes: 132, status: "approved" },
-  { id: "4", title: "Hợp tác với dự án DEX", votes: 76, status: "rejected" },
-];
+interface PopularProposalsProps {
+  proposals: Proposal[];
+}
 
-export function PopularProposals() {
+export function PopularProposals({ proposals }: PopularProposalsProps) {
+  // Nếu không có đề xuất, hiển thị thông báo
+  if (!proposals || proposals.length === 0) {
+    return (
+      <div className="text-muted-foreground">
+        Không có đề xuất nào để hiển thị.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {proposals.map((proposal) => (

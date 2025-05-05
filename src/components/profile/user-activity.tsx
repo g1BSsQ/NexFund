@@ -3,12 +3,12 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
-  { name: 'T1', votes: 4, proposals: 1, contributions: 2 },
-  { name: 'T2', votes: 5, proposals: 2, contributions: 3 },
-  { name: 'T3', votes: 7, proposals: 1, contributions: 4 },
-  { name: 'T4', votes: 3, proposals: 0, contributions: 2 },
-  { name: 'T5', votes: 6, proposals: 2, contributions: 3 },
-  { name: 'T6', votes: 10, proposals: 2, contributions: 5 },
+  { name: 'T1', votes: 0, proposals: 0, contributions: 0 },
+  { name: 'T2', votes: 0, proposals: 0, contributions: 0 },
+  { name: 'T3', votes: 0, proposals: 0, contributions: 0 },
+  { name: 'T4', votes: 0, proposals: 0, contributions: 0 },
+  { name: 'T5', votes: 0, proposals: 0, contributions: 0 },
+  { name: 'T6', votes: 0, proposals: 0, contributions: 0 },
 ];
 
 export function UserActivity() {

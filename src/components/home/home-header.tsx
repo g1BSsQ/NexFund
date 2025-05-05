@@ -43,32 +43,20 @@ export function HomeHeader() {
 
           let signature;
           let result = false;
-          let retryCount = 0;
 
-          while (!result && retryCount < 3) {
+          while (!result) {
             try {
               signature = await wallet.signData(nonce, addr);
               result = await checkSignature(nonce, signature, addr);
 
               if (!result) {
-                retryCount++;
-                if (retryCount < 3) {
                   console.warn(
-                    `Signature verification failed. Retrying (${retryCount}/3)...`
+                    `Signature verification failed.`
                   );
-                  alert("Signature verification failed. Please sign again.");
-                  await new Promise((resolve) => setTimeout(resolve, 1000));
-                }
               }
             } catch (signError) {
               console.error("Error during signing:", signError);
-              retryCount++;
-              if (retryCount < 3) {
                 alert("Failed to sign message. Please try again.");
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-              } else {
-                throw signError;
-              }
             }
           }
 

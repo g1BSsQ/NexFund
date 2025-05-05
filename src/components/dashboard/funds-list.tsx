@@ -1,3 +1,4 @@
+"use client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -8,34 +9,26 @@ interface Fund {
   id: string;
   name: string;
   description: string;
-  raised: number;
-  goal: number;
+  current: number;
+  total: number;
   category: string;
   members: number;
 }
 
-const funds: Fund[] = [
-  {
-    id: "community-development",
-    name: "Quỹ phát triển cộng đồng",
-    description: "Tài trợ các dự án phát triển cộng đồng và giáo dục blockchain.",
-    raised: 850,
-    goal: 1000,
-    category: "Cộng đồng",
-    members: 187
-  },
-  {
-    id: "innovation",
-    name: "Quỹ đổi mới sáng tạo",
-    description: "Hỗ trợ các dự án khởi nghiệp và đổi mới công nghệ blockchain.",
-    raised: 1250,
-    goal: 2000,
-    category: "Đổi mới",
-    members: 235
-  }
-];
+interface FundsListProps {
+  funds: Fund[];
+}
 
-export function FundsList() {
+export function FundsList({ funds }: FundsListProps) {
+  // Nếu không có quỹ, hiển thị thông báo
+  if (!funds || funds.length === 0) {
+    return (
+      <div className="text-muted-foreground">
+        Bạn chưa tham gia hoặc tạo quỹ nào.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {funds.map((fund) => (
@@ -55,10 +48,10 @@ export function FundsList() {
           
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Đã quyên góp: {fund.raised} ADA</span>
-              <span>Mục tiêu: {fund.goal} ADA</span>
+              <span>Số dư: {fund.current} ADA</span>
+              <span>Đã quyên góp: {fund.total} ADA</span>
             </div>
-            <Progress value={(fund.raised / fund.goal) * 100} className="h-2" />
+            <Progress value={fund.total === 0 ? 0 : (fund.current / fund.total) * 100} className="h-2" />
           </div>
           
           <div className="flex flex-wrap items-center justify-between mt-4 gap-2">

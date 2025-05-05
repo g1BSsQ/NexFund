@@ -17,43 +17,15 @@ interface Proposal {
   date: string;
 }
 
-const proposals: Proposal[] = [
-  {
-    id: "prop-1",
-    title: "Phát triển ứng dụng di động tương thích",
-    description: "Tạo một ứng dụng di động để cộng đồng có thể tương tác với quỹ một cách dễ dàng.",
-    fund: {
-      id: "community-development",
-      name: "Quỹ phát triển cộng đồng"
-    },
-    status: "approved",
-    date: "2025-03-15"
-  },
-  {
-    id: "prop-6",
-    title: "Xây dựng cầu nối liên chuỗi",
-    description: "Phát triển giải pháp giao tiếp giữa các blockchain khác nhau cho ứng dụng.",
-    fund: {
-      id: "innovation",
-      name: "Quỹ đổi mới sáng tạo"
-    },
-    status: "approved",
-    date: "2025-03-12"
-  },
-  {
-    id: "prop-2",
-    title: "Tổ chức hội thảo trực tuyến về DeFi",
-    description: "Tổ chức một chuỗi hội thảo giáo dục về tài chính phi tập trung.",
-    fund: {
-      id: "community-development",
-      name: "Quỹ phát triển cộng đồng"
-    },
-    status: "pending",
-    date: "2025-03-28"
-  }
-];
+interface UserProposalsProps {
+  proposals: Proposal[];
+}
 
-export function UserProposals() {
+export function UserProposals({ proposals }: UserProposalsProps) {
+  if (proposals.length === 0) {
+    return <div className="p-4 text-muted-foreground">Bạn chưa tạo đề xuất nào.</div>;
+  }
+
   return (
     <div className="space-y-4">
       {proposals.map((proposal) => (

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -12,69 +12,59 @@ interface Fund {
   id: string;
   name: string;
   description: string;
-  raised: number;
-  goal: number;
+  current: number;
+  total: number;
   category: string;
   members: number;
-  status: 'active' | 'completed' | 'draft';
+  status: "active" | "completed" | "draft";
 }
-
-const fundsData: Fund[] = [
-  {
-    id: "community-development",
-    name: "Quỹ phát triển cộng đồng",
-    description: "Tài trợ các dự án phát triển cộng đồng và giáo dục blockchain.",
-    raised: 850,
-    goal: 1000,
-    category: "Cộng đồng",
-    members: 187,
-    status: 'active'
-  },
-  {
-    id: "innovation",
-    name: "Quỹ đổi mới sáng tạo",
-    description: "Hỗ trợ các dự án khởi nghiệp và đổi mới công nghệ blockchain.",
-    raised: 1250,
-    goal: 2000,
-    category: "Đổi mới",
-    members: 235,
-    status: 'active'
-  },
-  {
-    id: "education",
-    name: "Quỹ giáo dục blockchain",
-    description: "Cung cấp nguồn lực giáo dục và đào tạo về blockchain và công nghệ phi tập trung.",
-    raised: 500,
-    goal: 800,
-    category: "Giáo dục",
-    members: 125,
-    status: 'active'
-  },
-  {
-    id: "research",
-    name: "Quỹ nghiên cứu và phát triển",
-    description: "Tài trợ cho nghiên cứu về công nghệ mới trong không gian blockchain.",
-    raised: 1800,
-    goal: 1800,
-    category: "Nghiên cứu",
-    members: 93,
-    status: 'completed'
-  }
-];
 
 interface FundsListProps {
   showFilters?: boolean;
+  searchQuery?: string;
 }
 
-export function FundsList({ showFilters = false }: FundsListProps) {
+export function FundsList({ showFilters = false, searchQuery = "" }: FundsListProps) {
+  const [funds, setFunds] = useState<Fund[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredFunds = fundsData.filter(fund => {
+  useEffect(() => {
+    const fetchFunds = async () => {
+      try {
+        const response = await fetch("http://localhost/danofund/api/get_public_funds.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ search: searchQuery }),
+        });
+        const data = await response.json();
+        if (data.error) {
+          setError(data.error);
+          setFunds([]);
+          return;
+        }
+        setFunds(data);
+        setError(null);
+      } catch (error) {
+        setError("Không thể tải danh sách quỹ. Vui lòng thử lại sau.");
+        setFunds([]);
+        console.error("Lỗi khi lấy danh sách quỹ:", error);
+      }
+    };
+
+    fetchFunds();
+  }, [searchQuery]);
+
+  const filteredFunds = funds.filter((fund) => {
     if (statusFilter !== "all" && fund.status !== statusFilter) return false;
     if (categoryFilter !== "all" && fund.category !== categoryFilter) return false;
     return true;
   });
+
+  if (error) {
+    return <div className="p-4 text-center text-red-500">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -89,8 +79,6 @@ export function FundsList({ showFilters = false }: FundsListProps) {
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
                 <SelectItem value="active">Đang hoạt động</SelectItem>
-                <SelectItem value="completed">Đã hoàn thành</SelectItem>
-                <SelectItem value="draft">Bản nháp</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -106,6 +94,7 @@ export function FundsList({ showFilters = false }: FundsListProps) {
                 <SelectItem value="Đổi mới">Đổi mới</SelectItem>
                 <SelectItem value="Giáo dục">Giáo dục</SelectItem>
                 <SelectItem value="Nghiên cứu">Nghiên cứu</SelectItem>
+                <SelectItem value="Thử nghiệm">Thử Nghiệm</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -133,10 +122,10 @@ export function FundsList({ showFilters = false }: FundsListProps) {
             
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Đã quyên góp: {fund.raised} ADA</span>
-                <span>Mục tiêu: {fund.goal} ADA</span>
+                <span>Số dư: {fund.current} ADA</span>
+                <span>Đã quyên góp: {fund.total} ADA</span>
               </div>
-              <Progress value={(fund.raised / fund.goal) * 100} className="h-2" />
+              <Progress value={fund.total === 0 ? 0 : (fund.current / fund.total) * 100} className="h-2" />
             </div>
             
             <div className="flex flex-wrap items-center justify-between mt-4 gap-2">
@@ -150,23 +139,11 @@ export function FundsList({ showFilters = false }: FundsListProps) {
   );
 }
 
-function StatusBadge({ status }: { status: 'active' | 'completed' | 'draft' }) {
-  if (status === 'active') {
+function StatusBadge({ status }: { status: "active" | "completed" | "draft" }) {
+  if (status === "active") {
     return (
       <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-800">
         Đang hoạt động
-      </Badge>
-    );
-  } else if (status === 'completed') {
-    return (
-      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:border-blue-800">
-        Đã hoàn thành
-      </Badge>
-    );
-  } else {
-    return (
-      <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
-        Bản nháp
       </Badge>
     );
   }

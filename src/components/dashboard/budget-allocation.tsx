@@ -3,13 +3,10 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 const data = [
-  { name: 'Phát triển', value: 45, color: '#3B82F6' },
-  { name: 'Marketing', value: 25, color: '#10B981' },
-  { name: 'Hoạt động', value: 20, color: '#F97316' },
-  { name: 'Trả thưởng', value: 10, color: '#8B5CF6' },
+  { name: 'Thử nghiệm', value: 100, color: '#3B82F6' },
 ];
 
-const COLORS = ['#3B82F6', '#10B981', '#F97316', '#8B5CF6'];
+const COLORS = ['#3B82F6'];
 
 export function BudgetAllocation() {
   return (
