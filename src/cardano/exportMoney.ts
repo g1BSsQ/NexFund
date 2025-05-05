@@ -95,6 +95,7 @@ export async function exportMoney(
       .requiredSignerHash(pubkeyContributor)
       .selectUtxosFrom(utxos)
       .setNetwork("preview")
+      .setNetwork("preview")
       .addUtxosFromSelection();
 
     const txHexBuilder = await txBuilder.complete();

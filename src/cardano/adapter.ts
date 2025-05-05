@@ -5,7 +5,11 @@ import {
     MeshTxBuilder,
     UTxO
   } from "@meshsdk/core";
+<<<<<<< HEAD
 
+=======
+  import { applyParamsToScript } from "@meshsdk/core-csl";
+>>>>>>> 89d88d498753b057df368ff4458573e442205541
   import plutus from '../../smartcontract/plutus.json';
   export const blockchainProvider = new BlockfrostProvider('previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc');
   
@@ -25,11 +29,9 @@ import {
   }
    
   // reusable function to get a UTxO by transaction hash
-  export async function getUtxoPlutusByTxHash(txHash: string): Promise<UTxO> {
+  export async function getUtxoPlutusByTxHash(txHash: string){
     const utxos = await blockchainProvider.fetchUTxOs(txHash);
-    const utxo = utxos.find((utxo: UTxO) => utxo.output.plutusData !== undefined);
-    if (!utxo) throw new Error("No UTXOs found in getUtxoPlutusByTxHash method.");
-    return utxo;
+    return  utxos[0];
   }
   
   
