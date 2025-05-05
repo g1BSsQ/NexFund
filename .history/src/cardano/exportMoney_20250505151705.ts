@@ -7,6 +7,7 @@
   } from "@meshsdk/core";
   import {
     blockchainProvider,
+    readValidator,
     getWalletInfoForTx,
     getTxBuilder,
   } from "./adapter";

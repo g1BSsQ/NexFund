@@ -7,6 +7,7 @@
   } from "@meshsdk/core";
   import {
     blockchainProvider,
+    readValidator,
     getWalletInfoForTx,
     getTxBuilder,
   } from "./adapter";
@@ -17,11 +18,11 @@
     scriptAddr: string,
     constributeScriptCbor: string,
     addrReceiver: string,
-    admin: string
+    admin
     ){
     const {utxos, walletAddress, collateral} = await getWalletInfoForTx(wallet);
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
-    const pubkeyAdmin = deserializeAddress(admin).pubKeyHash;
+    const pubkeyAdmin = deserializeAddress(walletAddress).pubKeyHash;
    
     const txBuilder = getTxBuilder();
     let amountSelect = 0;

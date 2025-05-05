@@ -7,6 +7,7 @@
   } from "@meshsdk/core";
   import {
     blockchainProvider,
+    readValidator,
     getWalletInfoForTx,
     getTxBuilder,
   } from "./adapter";
@@ -16,13 +17,12 @@
     amount: number,
     scriptAddr: string,
     constributeScriptCbor: string,
-    addrReceiver: string,
-    admin: string
+    addrRec
     ){
     const {utxos, walletAddress, collateral} = await getWalletInfoForTx(wallet);
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
-    const pubkeyAdmin = deserializeAddress(admin).pubKeyHash;
-   
+    const pubkeyAdmin = deserializeAddress(walletAddress).pubKeyHash;
+    const datum = mConStr0([amount, pubkeyContributor, pubkeyAdmin])
     const txBuilder = getTxBuilder();
     let amountSelect = 0;
     for(const tx of txHash){
@@ -53,16 +53,9 @@
           collateral.output.address,
       )
     }
-    const datum = mConStr0([amountSelect - amount, pubkeyContributor, pubkeyAdmin])
+    
     await txBuilder
     .spendingPlutusScriptV3()
-      .txOut(
-        addrReceiver,
-        [{
-          unit: "lovelace",
-          quantity: amount.toString(),
-        }]
-      )
       .txOut(
         scriptAddr,
         [{
