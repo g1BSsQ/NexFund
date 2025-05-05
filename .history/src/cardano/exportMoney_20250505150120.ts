@@ -1,4 +1,4 @@
-  import {
+import {
     deserializeAddress,
     mConStr0,
     stringToHex,
@@ -9,8 +9,9 @@
     readValidator,
     getWalletInfoForTx,
     getTxBuilder,
+    getUtxoPlutusByTxHash
   } from "./adapter";
-  export async function exportMoney(
+async function exportMoney(
     txHash: string[],
     wallet: BrowserWallet, 
     amount: number,
@@ -75,5 +76,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

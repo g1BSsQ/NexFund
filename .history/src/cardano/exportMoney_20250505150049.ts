@@ -1,6 +1,10 @@
-  import {
+import {
     deserializeAddress,
+    deserializeDatum,
     mConStr0,
+    MeshTxBuilder, 
+    applyParamsToScript,
+    serializePlutusScript,
     stringToHex,
     BrowserWallet
   } from "@meshsdk/core";
@@ -9,8 +13,9 @@
     readValidator,
     getWalletInfoForTx,
     getTxBuilder,
+    getUtxoPlutusByTxHash
   } from "./adapter";
-  export async function exportMoney(
+async function exportMoney(
     txHash: string[],
     wallet: BrowserWallet, 
     amount: number,
@@ -75,5 +80,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

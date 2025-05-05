@@ -75,5 +75,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

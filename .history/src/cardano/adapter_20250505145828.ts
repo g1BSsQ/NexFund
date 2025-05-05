@@ -9,6 +9,8 @@ import {
     BrowserWallet,
   } from "@meshsdk/core";
   import { applyParamsToScript } from "@meshsdk/core-csl";
+  import blueprint from "./plutus.json";
+  import { Script } from "node:vm";
   import plutus from '../../smartcontract/plutus.json';
   export const blockchainProvider = new BlockfrostProvider('preprod2DQWsQjqnzLW9swoBQujfKBIFyYILBiL');
   
@@ -28,9 +30,9 @@ import {
   }
    
   // reusable function to get a UTxO by transaction hash
-  export async function getUtxoPlutusByTxHash(txHash: string){
+  export async function getUtxoPlutusByTxHash(txHash: string): Promise<UTxO> {
     const utxos = await blockchainProvider.fetchUTxOs(txHash);
-    return  utxos[0];
+    return  
   }
   
   

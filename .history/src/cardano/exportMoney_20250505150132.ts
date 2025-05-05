@@ -1,4 +1,4 @@
-  import {
+import {
     deserializeAddress,
     mConStr0,
     stringToHex,
@@ -75,5 +75,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

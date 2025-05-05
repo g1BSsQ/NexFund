@@ -1,6 +1,10 @@
-  import {
+import {
     deserializeAddress,
+    deserializeDatum,
     mConStr0,
+    MeshTxBuilder, 
+    applyParamsToScript,
+    serializePlutusScript,
     stringToHex,
     BrowserWallet
   } from "@meshsdk/core";
@@ -9,8 +13,9 @@
     readValidator,
     getWalletInfoForTx,
     getTxBuilder,
+    getUtxoPlutusByTxHash
   } from "./adapter";
-  export async function exportMoney(
+async function exportMoney(
     txHash: string[],
     wallet: BrowserWallet, 
     amount: number,
@@ -28,9 +33,10 @@
     const txBuilder = getTxBuilder();
 
     for(const tx of txHash){
-      const scriptUtxo =  (await blockchainProvider.fetchUTxOs(tx))[0];
+    const scriptUtxo =  (await blockchainProvider.fetchUTxOs(tx))[0];
     
-      if (!scriptUtxo.output.plutusData) throw new Error('Plutus data not found');
+    if (!scriptUtxo.output.plutusData) throw new Error('Plutus data not found');
+    const datumm = deserializeDatum(scriptUtxo.output.plutusData); 
       await txBuilder
       .spendingPlutusScriptV3()
       .txIn(
@@ -75,5 +81,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

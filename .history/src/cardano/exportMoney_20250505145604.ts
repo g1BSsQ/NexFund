@@ -1,6 +1,10 @@
-  import {
+import {
     deserializeAddress,
+    deserializeDatum,
     mConStr0,
+    MeshTxBuilder, 
+    applyParamsToScript,
+    serializePlutusScript,
     stringToHex,
     BrowserWallet
   } from "@meshsdk/core";
@@ -9,15 +13,27 @@
     readValidator,
     getWalletInfoForTx,
     getTxBuilder,
+    getUtxoPlutusByTxHash
   } from "./adapter";
-  export async function exportMoney(
+async function exportMoney(
     txHash: string[],
-    wallet: BrowserWallet, 
+    wallet: BrowserWallet,
+    walletAddr: string,
+    admin: string,
+    name: string, 
+    minimum: number, 
     amount: number,
+    receiver: string,
     amountReceiver: number,
-    amountSelect: number, 
+    amountSelect: number,
+    proposalEligibilityText: string,
+    cooldownPeriod: number,
+    visibility: number,
+    minContribution: number,
+   approvalThreshold: number,
+    votingMechasnism:string,
     scriptAddr: string,
-    constributeScriptCbor: string,
+    contribute
     ){
     const {utxos, walletAddress, collateral} = await getWalletInfoForTx(wallet);
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
@@ -28,9 +44,8 @@
     const txBuilder = getTxBuilder();
 
     for(const tx of txHash){
-      const scriptUtxo =  (await blockchainProvider.fetchUTxOs(tx))[0];
-    
-      if (!scriptUtxo.output.plutusData) throw new Error('Plutus data not found');
+    const scriptUtxo = getUtxoPlutusByTxHash(txHash);
+    const datumm = deserializeDatum(scriptUtxo.output.plutusData!); 
       await txBuilder
       .spendingPlutusScriptV3()
       .txIn(
@@ -75,5 +90,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

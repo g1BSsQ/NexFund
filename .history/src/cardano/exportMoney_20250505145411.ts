@@ -1,6 +1,10 @@
-  import {
+import {
     deserializeAddress,
+    deserializeDatum,
     mConStr0,
+    MeshTxBuilder, 
+    applyParamsToScript,
+    serializePlutusScript,
     stringToHex,
     BrowserWallet
   } from "@meshsdk/core";
@@ -9,28 +13,53 @@
     readValidator,
     getWalletInfoForTx,
     getTxBuilder,
+    getUtxoPlutusByTxHash
   } from "./adapter";
-  export async function exportMoney(
+async function exportMoney(
     txHash: string[],
-    wallet: BrowserWallet, 
+    wallet: BrowserWallet,
+    walletAddr: string,
+    admin: string,
+    name: string, 
+    minimum: number, 
     amount: number,
+    receiver: string,
     amountReceiver: number,
-    amountSelect: number, 
-    scriptAddr: string,
-    constributeScriptCbor: string,
+    amountSelect: number,
+    proposalEligibilityText: string,
+  cooldownPeriod: number,
+  visibility: number,
+  minContribution: number,
+  approvalThreshold: number,
+  votingMechasnism:string,
     ){
     const {utxos, walletAddress, collateral} = await getWalletInfoForTx(wallet);
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
     const pubkeyAdmin = deserializeAddress(walletAddress).pubKeyHash;
     const contributeCompileCode = readValidator("contribute.contribute.spend");
-    
+    const constributeScriptCbor = applyParamsToScript(
+      contributeCompileCode,
+      [pubkeyAdmin, stringToHex(name),
+        approvalThreshold,
+        votingMechasnism,
+        proposalEligibilityText,
+        minContribution,
+        cooldownPeriod,
+        visibility,
+        
+      ],
+    );
+    const scriptAddr = serializePlutusScript(
+      { code: constributeScriptCbor, version: "V3" },
+      undefined,
+      0
+    ).address;
     const datum = mConStr0([amount, pubkeyContributor, pubkeyAdmin])
     const txBuilder = getTxBuilder();
 
     for(const tx of txHash){
-      const scriptUtxo =  (await blockchainProvider.fetchUTxOs(tx))[0];
-    
-      if (!scriptUtxo.output.plutusData) throw new Error('Plutus data not found');
+    const scriptUtxo = getUtxoPlutusByTxHash(txHash);
+    const datumm = deserializeDatum(scriptUtxo.output.plutusData!); 
       await txBuilder
       .spendingPlutusScriptV3()
       .txIn(
@@ -75,5 +104,3 @@
       
       return txhash;
 }
-
-export default exportMoney;

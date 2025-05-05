@@ -9,6 +9,8 @@ import {
     BrowserWallet,
   } from "@meshsdk/core";
   import { applyParamsToScript } from "@meshsdk/core-csl";
+  import blueprint from "./plutus.json";
+  import { Script } from "node:vm";
   import plutus from '../../smartcontract/plutus.json';
   export const blockchainProvider = new BlockfrostProvider('preprod2DQWsQjqnzLW9swoBQujfKBIFyYILBiL');
   
