@@ -73,12 +73,12 @@
         }]
       )
       }
-      await txBuilder
+    
       .txOutInlineDatumValue(datum)
       .changeAddress(walletAddress)
       .requiredSignerHash(pubkeyContributor)
       .selectUtxosFrom(utxos)
-      .setNetwork("preview")
+      .setNetwork("preprod")
       .addUtxosFromSelection();
 
       const completedTx = await txBuilder.complete();     
