@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Check, X, Calendar, Users, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatAddress } from "@/lib/utils";
+import { ENDPOINTS } from "@/lib/config";
 
 interface Invitation {
   id: string;
@@ -51,7 +52,7 @@ export function UserInvitations({ invitations, address }: UserInvitationsProps) 
     if (!invitation) return;
 
     try {
-      const response = await fetch("http://localhost/danofund/api/delete_invitation.php", {
+      const response = await fetch(ENDPOINTS.DELETE_INVITATION, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invitationId: id }),

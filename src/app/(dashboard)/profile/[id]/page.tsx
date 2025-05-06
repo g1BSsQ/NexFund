@@ -1,5 +1,3 @@
-// pages/profile.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,10 +13,10 @@ import { UserFunds } from "@/components/profile/user-funds";
 import { Settings, Edit } from "lucide-react";
 import { useWallet } from "@meshsdk/react";
 import { formatAddress, getTransactionDetails, getFundBalance } from "@/lib/utils";
+import { ENDPOINTS } from "@/lib/config";
 
 interface RawFund {
   id: string;
-  address: string;
   name: string;
   description: string;
   category: string;
@@ -26,6 +24,7 @@ interface RawFund {
 }
 
 interface Fund extends RawFund {
+  address: string;
   current: number;
   total: number;
 }
@@ -41,14 +40,24 @@ interface Invitation {
 
 type ProposalStatus = "approved" | "rejected" | "pending";
 
-interface Proposal {
+
+interface ApiProposal {
   id: string;
   title: string;
   description: string;
   fund: { id: string; name: string };
+  amount: number;
+  votes: number;
   status: ProposalStatus;
   date: string;
-  creator: string;
+}
+
+// Interface cho UserProposals component
+interface Proposal extends ApiProposal {
+  creator?: string;
+  details?: string;
+  deadline?: string;
+  fundId?: string;
 }
 
 interface ActivityData {
@@ -68,18 +77,16 @@ interface UserData {
   profile: UserProfile;
   funds: RawFund[];
   invitations: Invitation[];
-  proposals: Proposal[];
+  proposals: ApiProposal[];
   activity: ActivityData[];
 }
 
 export default function ProfilePage() {
-  const { wallet } = useWallet();
-  const [address, setAddress] = useState<string>("");
+  const { wallet, address } = useWallet();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [fundsWithStats, setFundsWithStats] = useState<Fund[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [myProposals, setMyProposals] = useState<Proposal[]>([]);
 
   useEffect(() => {
     if (!wallet) {
@@ -91,50 +98,69 @@ export default function ProfilePage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // 1. Lấy address
-        const addr = await wallet.getChangeAddress();
-        console.log("User address:", addr);
-        setAddress(addr);
 
-        // 2. Gọi API user_data.php
-        const resp = await fetch("http://localhost/danofund/api/user_data.php", {
+
+        const resp = await fetch(ENDPOINTS.USER_DATA, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_address: addr }),
+          body: JSON.stringify({ user_address: address }),
         });
-        console.log("user_data.php status:", resp.status);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        
+        if (!resp.ok) {
+          const errorText = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${errorText}`);
+        }
+        
         const data: UserData = await resp.json();
         if ((data as any).error) throw new Error((data as any).error);
+        
         setUserData(data);
 
-        // 3. Lấy proposals do user tạo
-        const propRes = await fetch("http://localhost/danofund/api/get_proposals.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
-        const allProps: any[] = await propRes.json();
-        setMyProposals(allProps.filter(p => p.creator === addr));
+        // 3. Enrich mỗi fund với address, current + total từ blockchain
+        if (data.funds && data.funds.length > 0) {
+          
+          const enriched = await Promise.all(
+            data.funds.map(async f => {
+              // Sử dụng id của fund làm address cho blockchain
+              const fundAddress = f.id;
 
-        // 4. Enrich mỗi fund với current + total
-        const enriched = await Promise.all(
-          data.funds.map(async f => {
-            const [txs, balance] = await Promise.all([
-              getTransactionDetails(f.address),
-              getFundBalance(f.address),
-            ]);
-            const totalDonated = txs
-              .filter(tx => tx.type === "in" && tx.description === "Đóng góp")
-              .reduce((sum, tx) => sum + tx.amount, 0);
-            return { ...f, current: balance, total: totalDonated } as Fund;
-          })
-        );
-        setFundsWithStats(enriched);
+              
+              try {
+                const [txs, balance] = await Promise.all([
+                  getTransactionDetails(fundAddress),
+                  getFundBalance(fundAddress),
+                ]);
+                
+                const totalDonated = txs
+                  .filter(tx => tx.type === "in" && tx.description === "Đóng góp")
+                  .reduce((sum, tx) => sum + tx.amount, 0);
+                
+                return { 
+                  ...f, 
+                  address: fundAddress, // thêm địa chỉ
+                  current: balance, 
+                  total: totalDonated 
+                } as Fund;
+              } catch (err) {
+                // Trả về fund với giá trị mặc định nếu không lấy được blockchain data
+                return {
+                  ...f,
+                  address: fundAddress,
+                  current: 0,
+                  total: 0
+                } as Fund;
+              }
+            })
+          );
+          
+          setFundsWithStats(enriched);
+        } else {
+
+          setFundsWithStats([]);
+        }
+        
         setError(null);
-
       } catch (e: any) {
-        console.error("fetchData error:", e);
         setError(e.message || "Không thể tải hồ sơ. Vui lòng thử lại.");
       } finally {
         setIsLoading(false);
@@ -222,7 +248,7 @@ export default function ProfilePage() {
               <UserFunds funds={fundsWithStats} />
             </TabsContent>
             <TabsContent value="proposals" className="mt-6">
-              <UserProposals proposals={myProposals} />
+              <UserProposals proposals={userData?.proposals || []} />
             </TabsContent>
             <TabsContent value="votes" className="mt-6">
               <UserVotes />

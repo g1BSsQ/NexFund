@@ -3,7 +3,7 @@ import { CheckCircle2, XCircle, Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-type ProposalStatus = "approved" | "rejected" | "pending";
+type ProposalStatus = "active" | "rejected" | "pending";
 
 interface Proposal {
   id: string;
@@ -49,7 +49,7 @@ export function PopularProposals({ proposals }: PopularProposalsProps) {
 
 function StatusIcon({ status }: { status: ProposalStatus }) {
   switch (status) {
-    case "approved":
+    case "active":
       return <CheckCircle2 className="h-4 w-4 text-green-500" />;
     case "rejected":
       return <XCircle className="h-4 w-4 text-red-500" />;
@@ -62,11 +62,11 @@ function StatusBadge({ status }: { status: ProposalStatus }) {
   return (
     <Badge className={cn(
       "text-xs",
-      status === "approved" && "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-300",
+      status === "active" && "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-300",
       status === "rejected" && "bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900 dark:text-red-300",
       status === "pending" && "bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900 dark:text-amber-300"
     )}>
-      {status === "approved" && "Đã duyệt"}
+      {status === "active" && "Đang hoạt động"}
       {status === "rejected" && "Từ chối"}
       {status === "pending" && "Đang chờ"}
     </Badge>

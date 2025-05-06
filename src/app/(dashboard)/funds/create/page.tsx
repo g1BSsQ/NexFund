@@ -19,6 +19,7 @@ import { motion } from "framer-motion"
 import { useWallet } from "@meshsdk/react"
 import { applyParamsToScript, deserializeAddress, serializePlutusScript, stringToHex } from "@meshsdk/core"
 import { readValidator } from "@/cardano/adapter"
+import { ENDPOINTS } from "@/lib/config"
 
 async function createFund(
   admin: string,
@@ -48,7 +49,7 @@ async function createFund(
       0,
     ).address;
 
-    const response = await fetch('http://localhost/danofund/api/create_fund.php', {
+    const response = await fetch(ENDPOINTS.CREATE_FUND, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -84,18 +85,8 @@ async function createFund(
 
 export default function CreateFundPage() {
 
-  const { wallet } = useWallet();
-  const [address, setAddress] = useState('');
+  const {address } = useWallet();
 
-  useEffect(() => {
-    async function fetchAddress() {
-      if (wallet) {
-        const addr = await wallet.getChangeAddress();
-        setAddress(addr);
-      }
-    }
-    fetchAddress();
-  }, [wallet]);
   
   const router = useRouter()
 
@@ -137,7 +128,6 @@ export default function CreateFundPage() {
         router.push(`/dashboard/${address}`);
       }
     } catch (error) {
-      console.error("Failed to create fund:", error);
     }
   }
 

@@ -27,17 +27,11 @@ export async function contribute(
 //  contributeSelection: number,
   proposalEligibilityText: string,
   cooldownPeriod: number,
-<<<<<<< HEAD
   visibility: string,
   minContribution: number,
   approvalThreshold: number,
   votingMechanism:string,
-=======
-  visibility: number,
-  minContribution: number,
-  approvalThreshold: number,
-  votingMechasnism:string,
->>>>>>> 89d88d498753b057df368ff4458573e442205541
+
 
 ) {
   try {
@@ -51,19 +45,12 @@ export async function contribute(
       contributeCompileCode,
       [pubkeyAdmin, stringToHex(name),
         approvalThreshold,
-<<<<<<< HEAD
         stringToHex(votingMechanism),
         stringToHex(proposalEligibilityText),
         minContribution,
         cooldownPeriod,
         stringToHex(visibility),
-=======
-        votingMechasnism,
-        proposalEligibilityText,
-        minContribution,
-        cooldownPeriod,
-        visibility,
->>>>>>> 89d88d498753b057df368ff4458573e442205541
+
         
       ],
     );
@@ -82,11 +69,8 @@ export async function contribute(
       .changeAddress(walletAddress)
       .requiredSignerHash(pubkeyContributor)
       .selectUtxosFrom(utxos)
-<<<<<<< HEAD
       .setNetwork("preview");
-=======
-      .setNetwork("preprod");
->>>>>>> 89d88d498753b057df368ff4458573e442205541
+
 
     const tx = await txBuilder.complete();
     const signedTx = await wallet.signTx(tx, true);
@@ -96,8 +80,6 @@ export async function contribute(
   } catch (error) {
     throw new Error("Error in contribute function: " + error);
   }
-<<<<<<< HEAD
+
 }
-=======
-}
->>>>>>> 89d88d498753b057df368ff4458573e442205541
+

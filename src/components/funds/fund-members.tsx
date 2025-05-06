@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { formatAddress } from "@/lib/utils";
+import { ENDPOINTS } from "@/lib/config";
 
 interface Member {
   id: string;
@@ -31,7 +32,7 @@ export function FundMembers({ fundId, memberTransactions }: { fundId: string; me
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const response = await fetch("http://localhost/danofund/api/get_fund_members.php", {
+        const response = await fetch(ENDPOINTS.GET_FUND_MEMBERS, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -62,7 +63,6 @@ export function FundMembers({ fundId, memberTransactions }: { fundId: string; me
       } catch (error) {
         setError("Không thể kết nối đến API. Vui lòng kiểm tra kết nối hoặc thử lại sau.");
         setMembers([]);
-        console.error("Không thể lấy danh sách thành viên:", error);
       }
     };
 

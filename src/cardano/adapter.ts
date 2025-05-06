@@ -5,11 +5,9 @@ import {
     MeshTxBuilder,
     UTxO
   } from "@meshsdk/core";
-<<<<<<< HEAD
 
-=======
   import { applyParamsToScript } from "@meshsdk/core-csl";
->>>>>>> 89d88d498753b057df368ff4458573e442205541
+
   import plutus from '../../smartcontract/plutus.json';
   export const blockchainProvider = new BlockfrostProvider('previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc');
   

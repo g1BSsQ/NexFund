@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'; // <-- added
 import Link from "next/link";
 import { Wallet, Copy, ExternalLink, LogOut, ChevronDown } from "lucide-react";
 import { Button } from '../ui/button';
+import Image from "next/image";
 
 export function HomeHeader() {
   const router = useRouter(); // <-- added
@@ -94,101 +95,17 @@ export function HomeHeader() {
     <header className="w-full px-4 sm:px-6 lg:px-8 py-4 bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm border-b border-primary/10">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center">
-          <span className="text-2xl font-bold gradient-text">DanoFund</span>
+          <Image
+            src="/logofull.svg" // Đường dẫn đến file logo trong thư mục public
+            alt="DanoFund Logo"
+            width={150}
+            height={40}
+            priority
+            className="h-auto"
+          />
         </Link>
 
         <div className="relative">
-          {connected && isAuthenticated ? (
-            <div className="relative">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowWalletDetails(!showWalletDetails)}
-                className="hover:border-primary hover:text-primary transition-colors flex items-center gap-2"
-              >
-                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-primary to-purple-500 flex-shrink-0"></div>
-                <span className="hidden md:inline max-w-[150px] truncate">
-                  {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : name}
-                </span>
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-              
-              {showWalletDetails && (
-                <div 
-                  ref={walletDetailsRef}
-                  className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-900 rounded-md shadow-xl overflow-hidden z-20 border border-primary/10"
-                >
-                  <div className="p-4 bg-gradient-to-r from-primary to-purple-500 text-white">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="font-bold">Ví của bạn</div>
-                      <div className="text-xs bg-white/20 rounded px-2 py-1">{name}</div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-2xl font-bold">{formatAda(walletBalance.lovelace)} ₳</div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-                    <div className="mb-4">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Địa chỉ ví</div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded flex-grow truncate">
-                          {walletAddress}
-                        </div>
-                        <button 
-                          onClick={copyAddressToClipboard}
-                          className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                          title="Sao chép địa chỉ"
-                        >
-                          <Copy className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                        <button 
-                          onClick={viewInExplorer}
-                          className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-                          title="Xem trên explorer"
-                        >
-                          <ExternalLink className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tài sản</div>
-                      <div className="max-h-[100px] overflow-auto bg-gray-50 dark:bg-gray-800 rounded p-1">
-                        {walletBalance.assets && walletBalance.assets.length > 0 ? (
-                          <div className="space-y-1">
-                            {walletBalance.assets.slice(0, 5).map((asset: any, index) => (
-                              <div key={index} className="text-sm p-1 flex justify-between">
-                                <div className="truncate max-w-[180px]">
-                                  {asset.unit.slice(0, 8)}...{asset.unit.slice(-4)}
-                                </div>
-                                <div>{asset.quantity}</div>
-                              </div>
-                            ))}
-                            {walletBalance.assets.length > 5 && (
-                              <div className="text-xs text-center text-gray-500 dark:text-gray-400 pt-1">
-                                +{walletBalance.assets.length - 5} tài sản khác
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-sm p-2 text-gray-500 dark:text-gray-400">Không tìm thấy tài sản</div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <Button
-                      variant="destructive"
-                      onClick={disconnect}
-                      className="w-full flex items-center justify-center gap-2"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span>Ngắt kết nối ví</span>
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
             <>
               <Button onClick={handleConnectWallet} variant="outline" className="hover:border-primary hover:text-primary transition-colors">
                 <Wallet className="mr-2 h-4 w-4" />
@@ -216,7 +133,6 @@ export function HomeHeader() {
                 </div>
               )}
             </>
-          )}
         </div>
       </div>
     </header>

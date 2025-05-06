@@ -1,3 +1,4 @@
+import { BLOCKFROST_API_URL, BLOCKFROST_PROJECT_ID } from "@/lib/config";
 import axios from "axios";
 
 type Utxo = {
@@ -6,12 +7,9 @@ type Utxo = {
   amount: { unit: string; quantity: string }[];
 };
 
-const API_URL = 'https://cardano-preview.blockfrost.io/api/v0';
-const PROJECT_ID = 'previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc';
-
 export async function fetchUtxos(address: string): Promise<Utxo[]> {
-  const res = await axios.get(`${API_URL}/addresses/${address}/utxos`, {
-    headers: { Project_id: PROJECT_ID },
+  const res = await axios.get(`${BLOCKFROST_API_URL}/addresses/${address}/utxos`, {
+    headers: { Project_id: BLOCKFROST_PROJECT_ID },
   });
   return res.data as Utxo[];
 }

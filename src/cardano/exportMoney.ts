@@ -21,10 +21,12 @@ export async function exportMoney(
   admin: string,
 ) {
   try {
+    console.log("exportMoney function called");
+    console.log("txHash:", txHash);
     const { utxos, walletAddress, collateral } = await getWalletInfoForTx(wallet);
     const pubkeyAdmin = deserializeAddress(admin).pubKeyHash;
     const pubkeyContributor = deserializeAddress(walletAddress).pubKeyHash;
-    const txBuilder = getTxBuilder();
+    const txBuilder = getTxBuilder().spendingPlutusScriptV3();
     let cash = 0;
     for (const tx of txHash) {
       const scriptUtxos = await blockchainProvider.fetchUTxOs(tx);
@@ -35,17 +37,14 @@ export async function exportMoney(
           break;
         }
       }  
-      console.log("utxo", utxo);
-      if (!utxo) {
-
-        console.error("Not Found", tx);
+      if(!utxo){
         continue;
-      } 
+      }
       const datumFetch = deserializeDatum(utxo.output.plutusData!);
       cash += Number(datumFetch.fields[0].int);
-      console.log("cash", cash);
+
       txBuilder
-        .spendingPlutusScriptV3()
+       // .spendingPlutusScriptV3()
         .txIn(
           utxo.input.txHash,
           utxo.input.outputIndex,
@@ -55,13 +54,12 @@ export async function exportMoney(
         .txInInlineDatumPresent()
         .txInRedeemerValue(
           mConStr0([stringToHex("ExportMoney")])
-          
         )
         .txInScript(contributeScriptCbor);
     }
      const amountReverse = cash - amount;
      txBuilder
-     .spendingPlutusScriptV3()
+     //.spendingPlutusScriptV3()
       .txInCollateral(
         collateral.input.txHash,
         collateral.input.outputIndex,
@@ -76,10 +74,10 @@ export async function exportMoney(
         }]
       );
       
-    if (amountReverse > 12000000) {
-      const datum = mConStr0([10000000, pubkeyContributor, pubkeyAdmin]);
+    if (amountReverse > 1200000) {
+      const datum = mConStr0([amountReverse, pubkeyContributor, pubkeyAdmin]);
       txBuilder
-      .spendingPlutusScriptV3()
+      //.spendingPlutusScriptV3()
         .txOut(
           scriptAddr,
           [{
@@ -91,21 +89,22 @@ export async function exportMoney(
     }
 
     txBuilder
+   // .spendingPlutusScriptV3()
       .changeAddress(walletAddress)
       .requiredSignerHash(pubkeyContributor)
       .selectUtxosFrom(utxos)
       .setNetwork("preview")
-      .setNetwork("preview")
+    //  .setNetwork("preview")
       .addUtxosFromSelection();
 
     const txHexBuilder = await txBuilder.complete();
     const signedTx = await wallet.signTx(txHexBuilder, true);
     const txId = await wallet.submitTx(signedTx);
-    console.log("Transaction ID: ", txId);
+
     return txId;
     
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error in exportMoney function:", error);
     throw new Error("Error in exportMoney function: " + error);
   }
 }

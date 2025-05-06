@@ -10,10 +10,8 @@ import { FinancialOverview } from "@/components/finances/financial-overview";
 import { useWallet } from "@meshsdk/react";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { BLOCKFROST_API_URL, BLOCKFROST_PROJECT_ID, BLOCKFROST_PROJECT_ID, COINGECKO_API_URL } from "@/lib/config";
 
-const API_URL = 'https://cardano-preview.blockfrost.io/api/v0';
-const PROJECT_ID = 'previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc';
-const COINGECKO_API_URL = 'https://api.coingecko.com/api/v3/simple/price';
 
 interface Transaction {
   id: string;
@@ -40,8 +38,8 @@ interface PriceData {
 async function getTransactionAggregates(walletAddress: string): Promise<TransactionAggregates> {
   const txListOptions = {
     method: "GET",
-    url: `${API_URL}/addresses/${walletAddress}/txs`, 
-    headers: { Project_id: PROJECT_ID },
+    url: `${BLOCKFROST_API_URL}/addresses/${walletAddress}/txs`, 
+    headers: { Project_id: BLOCKFROST_PROJECT_ID },
     params: {
       count: 100,
       page: 1,
@@ -56,13 +54,13 @@ async function getTransactionAggregates(walletAddress: string): Promise<Transact
       txHashes.map(async (txHash: string) => {
         const txDetailOptions = {
           method: "GET",
-          url: `${API_URL}/txs/${txHash}`,
-          headers: { Project_id: PROJECT_ID },
+          url: `${BLOCKFROST_API_URL}/txs/${txHash}`,
+          headers: { Project_id: BLOCKFROST_PROJECT_ID },
         };
         const txUtxoOptions = {
           method: "GET",
-          url: `${API_URL}/txs/${txHash}/utxos`,
-          headers: { Project_id: PROJECT_ID },
+          url: `${BLOCKFROST_API_URL}/txs/${txHash}/utxos`,
+          headers: { Project_id: BLOCKFROST_PROJECT_ID },
         };
 
         try {
@@ -117,8 +115,8 @@ async function getTransactionAggregates(walletAddress: string): Promise<Transact
 
           const blockOptions = {
             method: "GET",
-            url: `${API_URL}/blocks/${txDetailRes.data.block}`,
-            headers: { Project_id: PROJECT_ID },
+            url: `${BLOCKFROST_API_URL}/blocks/${txDetailRes.data.block}`,
+            headers: { Project_id: BLOCKFROST_PROJECT_ID },
           };
           const blockRes = await axios.request(blockOptions);
           const txDate = new Date(blockRes.data.time * 1000);
@@ -191,7 +189,7 @@ async function fetchPriceData(balanceADA: number): Promise<PriceData> {
 }
 
 export default function FinancesPage() {
-  const { wallet } = useWallet();
+  const { wallet, address } = useWallet();
   const [balance, setBalance] = useState(0);
   const [totalFees, setTotalFees] = useState(0);
   const [totalIn, setTotalIn] = useState(0);
@@ -204,9 +202,8 @@ export default function FinancesPage() {
     async function fetchFinances() {
       if (wallet) {
         try {
-          const addr = await wallet.getChangeAddress();
           const balance = Number((await wallet.getBalance())[0].quantity);
-          const aggregates = await getTransactionAggregates(addr);
+          const aggregates = await getTransactionAggregates(address);
 
           setBalance(balance);
           setTotalFees(aggregates.totalFees);

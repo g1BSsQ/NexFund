@@ -24,8 +24,17 @@ export async function fetchVoter(address: string): Promise<VoteResult> {
 
   const latestVotes = new Map<string, { vote: string; txHash: string }>(); // Lưu vote và txHash
 
-  try {
-    const { data } = await axios.request<string[]>(options);
+    try {
+      let data: string[] = [];
+      try {
+        const response = await axios.request<string[]>(options);
+        data = response.data;
+      } catch (axiosError: any) {
+        if (axiosError.response?.status === 404) {
+          return { yesVoters: [], noVoters: [], totalVoters: 0 };
+        }
+        return { yesVoters: [], noVoters: [], totalVoters: 0 };
+      }
     for (const tx of data) {
       const utxos = await blockchainProvider.fetchUTxOs(tx);
       const utxosWithPlutus = utxos.filter((utxo: any) => utxo.output.plutusData !== undefined);
@@ -69,7 +78,6 @@ export async function fetchVoter(address: string): Promise<VoteResult> {
 
     return { yesVoters, noVoters, totalVoters };
   } catch (error) {
-    console.error(`Lỗi khi lấy giao dịch cho địa chỉ ${address}:`, error);
     return { yesVoters: [], noVoters: [], totalVoters: 0 };
   }
 }
@@ -83,10 +91,3 @@ function hexToString(hex: string): string {
   }
   return str;
 }
-
-async function main() {
-  const result = await fetchVoter('addr_test1wr93u5xcszjgerll0p3zrpqfatuyyd9sdxt38j4g6qr5h2s7d4fkt');
-  console.log('Kết quả phiếu bầu:', result);
-}
-
-main();

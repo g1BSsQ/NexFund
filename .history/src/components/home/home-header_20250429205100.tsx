@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 
 export function HomeHeader() {
   const router = useRouter(); // <-- added
-  const { connect, connected, disconnect, name, wallet } = useWallet();
+  const { connect, connected, disconnect, name, wallet, address } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,10 +33,9 @@ export function HomeHeader() {
 
   useEffect(() => {
     async function authenticateUser() {
-      if (wallet && connected) {
+      if (wallet && connected && address) {
         try {
-          const addr = await wallet.getChangeAddress();
-          setWalletAddress(addr);
+          setWalletAddress(address);
           const nonce = generateNonce(
             "Welcome to DanoFund - Please sign to authenticate"
           );
@@ -47,8 +46,8 @@ export function HomeHeader() {
 
           while (!result && retryCount < 3) {
             try {
-              signature = await wallet.signData(nonce, addr);
-              result = await checkSignature(nonce, signature, addr);
+              signature = await wallet.signData(nonce, address);
+              result = await checkSignature(nonce, signature, address);
 
               if (!result) {
                 retryCount++;
@@ -75,7 +74,7 @@ export function HomeHeader() {
           if (result) {
             setIsAuthenticated(true);
             console.log("Wallet connected and authenticated successfully!");
-            router.push(`/dashboard/${addr}`); // <-- added navigation after auth success
+            router.push(`/dashboard/${address}`); // <-- added navigation after auth success
           } else {
             alert(
               "Failed to verify your signature after multiple attempts. Please reconnect your wallet."

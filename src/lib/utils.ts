@@ -1,10 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-
 import axios from "axios";
-
-const API_URL = 'https://cardano-preview.blockfrost.io/api/v0';
-const PROJECT_ID = 'previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc';
+import { BLOCKFROST_API_URL, BLOCKFROST_PROJECT_ID } from './config';
 
 export interface Transaction {
   id: string;
@@ -18,22 +15,25 @@ export interface Transaction {
 }
 
 export async function getTransactionDetails(fundAddress: string): Promise<Transaction[]> {
-  const txListOptions = {
-    method: "GET",
-    url: `${API_URL}/addresses/${fundAddress}/txs`,
-    headers: { Project_id: PROJECT_ID },
-    params: { count: 100, page: 1, order: "desc" },
-  };
-
   try {
+    const txListOptions = {
+      method: "GET",
+      url: `${BLOCKFROST_API_URL}/addresses/${fundAddress}/txs`,
+      headers: { Project_id: BLOCKFROST_PROJECT_ID },
+      params: { count: 100, page: 1, order: "desc" },
+    };
     const { data: txHashes } = await axios.request<string[]>(txListOptions);
 
     const transactions = await Promise.all(
       txHashes.map(async (txHash) => {
         try {
           const [txDetailRes, txUtxoRes] = await Promise.all([
-            axios.get(`${API_URL}/txs/${txHash}`,   { headers: { Project_id: PROJECT_ID } }),
-            axios.get(`${API_URL}/txs/${txHash}/utxos`, { headers: { Project_id: PROJECT_ID } }),
+            axios.get(`${BLOCKFROST_API_URL}/txs/${txHash}`, {
+              headers: { Project_id: BLOCKFROST_PROJECT_ID },
+            }),
+            axios.get(`${BLOCKFROST_API_URL}/txs/${txHash}/utxos`, {
+              headers: { Project_id: BLOCKFROST_PROJECT_ID },
+            }),
           ]);
 
           const fee = Number(txDetailRes.data.fees) || 0;
@@ -66,18 +66,11 @@ export async function getTransactionDetails(fundAddress: string): Promise<Transa
             counter = ins[0]?.address || "Giao dịch nội bộ";
           }
 
-          // Lấy ngày từ block
-          const blk = await axios.get(`${API_URL}/blocks/${txDetailRes.data.block}`, {
-            headers: { Project_id: PROJECT_ID },
-          });
-          const date = new Date(blk.data.time * 1000).toISOString().split("T")[0];
-
           return {
             id: txHash,
             type,
             amount: amountADA,
             fee: fee / 1_000_000,
-            date,
             status: "completed",
             description:
               counter === "Giao dịch nội bộ"
@@ -87,39 +80,66 @@ export async function getTransactionDetails(fundAddress: string): Promise<Transa
                 : "Giải ngân",
             address: counter === "Giao dịch nội bộ" ? fundAddress : counter,
           } as Transaction;
-        } catch (e) {
-          console.error(`Lỗi khi xử lý tx ${txHash}:`, e);
+        } catch {
+          // silent failure: drop this tx
           return null;
         }
       })
     );
 
     return transactions.filter((t): t is Transaction => t !== null);
-  } catch (e) {
-    console.error("Lỗi khi lấy danh sách giao dịch:", e);
+  } catch {
+    // silent failure: return empty list
     return [];
   }
 }
 
 export async function getFundBalance(fundAddress: string): Promise<number> {
   try {
-    const res = await axios.get(`${API_URL}/addresses/${fundAddress}`, {
-      headers: { Project_id: PROJECT_ID },
+    const res = await axios.get(`${BLOCKFROST_API_URL}/addresses/${fundAddress}`, {
+      headers: { Project_id: BLOCKFROST_PROJECT_ID },
     });
     const lov = res.data.amount.find((a: any) => a.unit === "lovelace");
     return lov ? Number(lov.quantity) / 1_000_000 : 0;
-  } catch (e) {
-    console.error("Lỗi khi lấy số dư:", e);
+  } catch {
     return 0;
   }
+}
+
+// Hàm mới: Tính tổng quyên góp
+export async function getTotalDonations(fundAddress: string): Promise<number> {
+  const transactions = await getTransactionDetails(fundAddress);
+  return transactions
+    .filter(tx => tx.type === "in" && tx.description === "Đóng góp")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+}
+
+// Hàm mới: Lấy tổng quyên góp, tổng chi tiêu và số dư cùng một lúc
+export async function getTransactionsWithTotal(fundAddress: string): Promise<{
+  transactions: Transaction[];
+  totalDonations: number;
+  totalSpent: number;
+  balance: number;
+}> {
+  const transactions = await getTransactionDetails(fundAddress);
+
+  const totalDonations = transactions
+    .filter(tx => tx.type === "in" && tx.description === "Đóng góp")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const totalSpent = transactions
+    .filter(tx => tx.type === "out" && tx.description === "Giải ngân")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const balance = totalDonations - totalSpent;
+
+  return { transactions, totalDonations, totalSpent, balance };
 }
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
 export function formatAddress(address: string, prefixLength: number = 14, suffixLength: number = 3) {
   return address.length > prefixLength + suffixLength
     ? `${address.slice(0, prefixLength)}...${address.slice(-suffixLength)}`
     : address;
 }
-

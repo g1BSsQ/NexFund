@@ -37,6 +37,7 @@ import axios from "axios";
 import {exportMoney} from "@/cardano/exportMoney"
 import { readValidator } from "@/cardano/adapter"
 import { fetchUtxos, selectBestUtxos, selectBestUtxoTxHashes } from "@/cardano/selectBestUtxos"
+import { BLOCKFROST_API_URL, BLOCKFROST_PROJECT_ID, ENDPOINTS } from "@/lib/config"
 
 interface Fund {
   id: string
@@ -58,6 +59,7 @@ interface Proposal {
   fundId: string
   title: string
   description: string
+  details: string
   amount: number
   category: string
   deadline: string
@@ -86,16 +88,13 @@ interface Proposal {
   }[]
 }
 
-const API_URL = 'https://cardano-preview.blockfrost.io/api/v0';
-const PROJECT_ID = 'previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc';
-
 // Lấy đóng góp từ Blockfrost
 async function fetchContributions(fundAddress: string) {
   try {
     const txListOptions = {
       method: "GET",
-      url: `${API_URL}/addresses/${fundAddress}/txs`,
-      headers: { Project_id: PROJECT_ID },
+      url: `${BLOCKFROST_API_URL}/addresses/${fundAddress}/txs`,
+      headers: { Project_id: BLOCKFROST_PROJECT_ID },
       params: { count: 100, page: 1, order: "desc" },
     }
     const { data: txHashes } = await axios.request<string[]>(txListOptions)
@@ -104,7 +103,7 @@ async function fetchContributions(fundAddress: string) {
 
     await Promise.all(
       txHashes.map(async (txHash: string) => {
-        const utxoRes = await axios.get(`${API_URL}/txs/${txHash}/utxos`, { headers: { Project_id: PROJECT_ID } })
+        const utxoRes = await axios.get(`${BLOCKFROST_API_URL}/txs/${txHash}/utxos`, { headers: { Project_id: BLOCKFROST_PROJECT_ID } })
         const utxos = utxoRes.data
         utxos.outputs
           .filter((utxo: any) => utxo.address === fundAddress)
@@ -132,19 +131,10 @@ export default function ProposalDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { wallet } = useWallet()
-  const [address, setAddress] = useState("")
+  const { wallet, address } = useWallet()
   const proposalId = params.proposalId as string
 
-  useEffect(() => {
-    const fetchAddress = async () => {
-      if (wallet) {
-        const addr = await wallet.getChangeAddress()
-        setAddress(addr)
-      }
-    }
-    fetchAddress()
-  }, [wallet])
+
 
   const [proposal, setProposal] = useState<Proposal | null>(null)
   const [fund, setFund] = useState<Fund | null>(null)
@@ -164,7 +154,7 @@ export default function ProposalDetailPage() {
         if (!proposalId) throw new Error("Thiếu proposalId trong URL")
 
         // Fetch proposal data
-        const proposalResponse = await fetch("http://localhost/danofund/api/get_proposal_details.php", {
+        const proposalResponse = await fetch(ENDPOINTS.GET_PROPOSAL_DETAILS, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ proposalId }),
@@ -177,7 +167,7 @@ export default function ProposalDetailPage() {
         if (!fundId) throw new Error("Không tìm thấy fundId trong dữ liệu đề xuất")
 
         // Fetch fund data
-        const fundResponse = await fetch("http://localhost/danofund/api/get_fund_details.php", {
+        const fundResponse = await fetch(ENDPOINTS.GET_FUND_DETAILS, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fundId }),
@@ -204,7 +194,7 @@ export default function ProposalDetailPage() {
         ]
 
         // Fetch members
-        const membersResponse = await fetch("http://localhost/danofund/api/get_fund_members.php", {
+        const membersResponse = await fetch(ENDPOINTS.GET_FUND_MEMBERS, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fundId }),
@@ -255,6 +245,7 @@ export default function ProposalDetailPage() {
           fundId: proposalData.fundId,
           title: proposalData.title,
           description: proposalData.description,
+          details: proposalData.details,
           amount: Number.parseFloat(proposalData.amount),
           category: proposalData.category || "Khác",
           deadline: proposalData.deadline,
@@ -340,6 +331,18 @@ export default function ProposalDetailPage() {
         addrReceiver,
         admin
       );
+      await fetch("http://localhost/danofund/api/update_proposal_status.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          status: "active",
+          txHash: txhash,
+        }),
+      });
+
+      setProposal(prev => prev ? { ...prev, status: "active" } : prev);
+
       toast({
         title: "Giải ngân thành công",
         description: `Đã giải ngân ${proposal.amount} ADA cho đề xuất này. TxHash: ${txhash}`,
@@ -389,6 +392,31 @@ export default function ProposalDetailPage() {
       setVoting(false)
     }
   }
+
+  const handleCancel = async () => {
+    if (!proposal) return;
+    try {
+      await fetch("http://localhost/danofund/api/update_proposal_status.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          status: "rejected",
+        }),
+      });
+      setProposal(prev => prev ? { ...prev, status: "rejected" } : prev);
+      toast({
+        title: "Đã hủy đề xuất",
+        description: "Trạng thái đề xuất đã được cập nhật là Từ chối",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: `Không thể hủy đề xuất: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -517,7 +545,7 @@ export default function ProposalDetailPage() {
             <CardContent>
               <div className="space-y-6">
                 <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {proposal.description.split("\n\n").map((paragraph, index) => (
+                  {proposal.details.split("\n\n").map((paragraph, index) => (
                     <p key={index}>{paragraph}</p>
                   ))}
                 </div>
@@ -717,7 +745,7 @@ export default function ProposalDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-muted/20">
-                  <div className="text-sm text-muted-foreground">Tổng số phiếu</div>
+                  <div className="text-sm text-muted-foreground">Tổng số phiếu của quỹ</div>
                   <div className="text-2xl font-bold">{proposal.votesCount}</div>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/20">
@@ -737,6 +765,7 @@ export default function ProposalDetailPage() {
                         <p className="text-xs text-muted-foreground mt-1">Bạn vẫn có thể thay đổi quyết định</p>
                       </div>
                     )}
+                    
                     <div className="grid grid-cols-2 gap-3">
                       <Button
                         variant="default"
@@ -828,29 +857,32 @@ export default function ProposalDetailPage() {
               <CardTitle>Hành động</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-            <Button
-              variant="default"
-              className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
-              disabled={proposal.votePercentage < proposal.votesRequired}
-              onClick={handleDisburse}
-            >
-              <DollarSign className="mr-2 h-4 w-4" />
-              Giải ngân
-            </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
-                Xuất báo cáo PDF
-              </Button>
-              {proposal.creator === address && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Hủy đề xuất
+                {proposal.status === "pending" && proposal.creator === address && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
+                    onClick={handleDisburse}
+                    disabled={voting || proposal.votePercentage < proposal.votesRequired}
+                  >
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    Giải ngân
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full justify-start">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Xuất báo cáo PDF
                 </Button>
-              )}
-            </CardContent>
+                {proposal.status === "pending" && proposal.creator === address && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={handleCancel}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Hủy đề xuất
+                  </Button>
+                )}
+              </CardContent>
           </Card>
         </div>
       </div>

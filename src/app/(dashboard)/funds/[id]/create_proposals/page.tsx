@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { id, vi } from "date-fns/locale";
 import { applyParamsToScript, deserializeAddress, serializePlutusScript, stringToHex } from "@meshsdk/core";
 import { readValidator } from "@/cardano/adapter";
+import { ENDPOINTS } from "@/lib/config";
 
 interface Fund {
   id: string;
@@ -51,7 +52,7 @@ export default function CreateProposalPage() {
   const params = useParams();
   const fundId = params.id as string;
   const { toast } = useToast();
-  const { wallet, connect } = useWallet();
+  const { wallet, connect, address } = useWallet();
 
   // State for fund details
   const [fund, setFund] = useState<Fund | null>(null);
@@ -73,11 +74,8 @@ export default function CreateProposalPage() {
   // Fetch fund details on mount
   useEffect(() => {
     async function loadFund() {
-      const API_BASE =
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        "http://localhost/danofund/api";
       try {
-        const res = await fetch(`${API_BASE}/get_fund_details.php`, {
+        const res = await fetch(ENDPOINTS.GET_FUND_DETAILS, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fundId }),
@@ -121,7 +119,6 @@ export default function CreateProposalPage() {
     }
     setIsSubmitting(true);
     try {
-      const address = await wallet.getChangeAddress();
       const pubkeyAdmin = deserializeAddress(address).pubKeyHash;
       const voteCompileCode = readValidator("vote.vote.spend");
       const deadlineStr: string = deadline!
@@ -149,10 +146,7 @@ export default function CreateProposalPage() {
       formData.append("deadline", deadline.toISOString().split("T")[0]);
       attachments.forEach((file) => formData.append("attachments[]", file));
 
-      const API_BASE =
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        "http://localhost/danofund/api";
-      const res = await fetch(`${API_BASE}/create_proposal.php`, {
+      const res = await fetch(ENDPOINTS.CREATE_PROPOSAL, {
         method: "POST",
         body: formData,
       });
@@ -165,7 +159,6 @@ export default function CreateProposalPage() {
       });
       router.push(`/funds/${fundId}`);
     } catch (err: any) {
-      console.error("Submit error:", err);
       toast({
         title: "Lỗi",
         description: err.message || "Không thể tạo đề xuất",

@@ -7,6 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { Eye } from "lucide-react";
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getFundBalance, getTotalDonations } from "@/lib/utils";
+import { ENDPOINTS } from "@/lib/config";
 
 interface Fund {
   id: string;
@@ -29,11 +31,13 @@ export function FundsList({ showFilters = false, searchQuery = "" }: FundsListPr
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchFunds = async () => {
       try {
-        const response = await fetch("http://localhost/danofund/api/get_public_funds.php", {
+        setLoading(true);
+        const response = await fetch(ENDPOINTS.GET_PUBLIC_FUNDS, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ search: searchQuery }),
@@ -42,14 +46,45 @@ export function FundsList({ showFilters = false, searchQuery = "" }: FundsListPr
         if (data.error) {
           setError(data.error);
           setFunds([]);
+          setLoading(false);
           return;
         }
-        setFunds(data);
+
+        // Lấy thêm thông tin balance và donation từ blockchain cho mỗi quỹ
+        const enrichedFunds = await Promise.all(
+          data.map(async (fund: Fund) => {
+            try {
+              // Kiểm tra xác định fund.address tồn tại
+              if (!fund.id) {
+                console.warn(`Fund ${fund.id} doesn't have an address`);
+                return { ...fund, current: 0, total: 0 };
+              }
+
+              // Lấy dữ liệu từ blockchain
+              const [balance, totalDonations] = await Promise.all([
+                getFundBalance(fund.id),
+                getTotalDonations(fund.id)
+              ]);
+
+              return { 
+                ...fund, 
+                current: balance,
+                total: totalDonations
+              };
+            } catch (err) {
+              return fund; // Giữ nguyên nếu có lỗi
+            }
+          })
+        );
+
+        setFunds(enrichedFunds);
         setError(null);
       } catch (error) {
         setError("Không thể tải danh sách quỹ. Vui lòng thử lại sau.");
         setFunds([]);
         console.error("Lỗi khi lấy danh sách quỹ:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -61,6 +96,10 @@ export function FundsList({ showFilters = false, searchQuery = "" }: FundsListPr
     if (categoryFilter !== "all" && fund.category !== categoryFilter) return false;
     return true;
   });
+
+  if (loading) {
+    return <div className="p-4 text-center">Đang tải dữ liệu quỹ...</div>;
+  }
 
   if (error) {
     return <div className="p-4 text-center text-red-500">{error}</div>;

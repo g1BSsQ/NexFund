@@ -22,6 +22,7 @@ import { contribute } from "@/cardano/contribute";
 import { Asset } from "@meshsdk/core";
 import { fetchVoter } from "@/cardano/caculateVote";
 import axios from "axios";
+import { BLOCKFROST_API_URL, BLOCKFROST_PROJECT_ID, ENDPOINTS } from "@/lib/config";
 
 interface Fund {
   id: string;
@@ -84,14 +85,12 @@ interface Member {
   joinDate: string;
 }
 
-const API_URL = 'https://cardano-preview.blockfrost.io/api/v0';
-const PROJECT_ID = 'previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc';
 
 async function getTransactionDetails(fundAddress: string): Promise<Transaction[]> {
   const txListOptions = {
     method: "GET",
-    url: `${API_URL}/addresses/${fundAddress}/txs`,
-    headers: { Project_id: PROJECT_ID },
+    url: `${BLOCKFROST_API_URL}/addresses/${fundAddress}/txs`,
+    headers: { Project_id: BLOCKFROST_PROJECT_ID },
     params: {
       count: 100,
       page: 1,
@@ -100,19 +99,28 @@ async function getTransactionDetails(fundAddress: string): Promise<Transaction[]
   };
 
   try {
-    const { data: txHashes } = await axios.request<string[]>(txListOptions);
+    let txHashes: string[] = [];
+    try {
+      const response = await axios.request(txListOptions);
+      txHashes = response.data;
+    } catch (txError: any) {
+      if (txError.response?.status === 404) {
+        return [];
+      }
+      return [];
+    }
 
     const transactions = await Promise.all(
       txHashes.map(async (txHash: string) => {
         const txDetailOptions = {
           method: "GET",
-          url: `${API_URL}/txs/${txHash}`,
-          headers: { Project_id: PROJECT_ID },
+          url: `${BLOCKFROST_API_URL}/txs/${txHash}`,
+          headers: { Project_id: BLOCKFROST_PROJECT_ID },
         };
         const txUtxoOptions = {
           method: "GET",
-          url: `${API_URL}/txs/${txHash}/utxos`,
-          headers: { Project_id: PROJECT_ID },
+          url: `${BLOCKFROST_API_URL}/txs/${txHash}/utxos`,
+          headers: { Project_id: BLOCKFROST_PROJECT_ID },
         };
 
         try {
@@ -157,8 +165,8 @@ async function getTransactionDetails(fundAddress: string): Promise<Transaction[]
 
           const blockOptions = {
             method: "GET",
-            url: `${API_URL}/blocks/${txDetailRes.data.block}`,
-            headers: { Project_id: PROJECT_ID },
+            url: `${BLOCKFROST_API_URL}/blocks/${txDetailRes.data.block}`,
+            headers: { Project_id: BLOCKFROST_PROJECT_ID },
           };
           const blockRes = await axios.request(blockOptions);
           const txDate = new Date(blockRes.data.time * 1000).toISOString().split("T")[0];
@@ -174,7 +182,6 @@ async function getTransactionDetails(fundAddress: string): Promise<Transaction[]
             address: counterPartyAddress === "Giao dịch nội bộ" ? fundAddress : counterPartyAddress,
           };
         } catch (error) {
-          console.error(`Lỗi khi xử lý giao dịch ${txHash}:`, error);
           return null;
         }
       })
@@ -182,7 +189,6 @@ async function getTransactionDetails(fundAddress: string): Promise<Transaction[]
 
     return transactions.filter((tx): tx is Transaction => tx !== null);
   } catch (error) {
-    console.error("Lỗi khi truy vấn danh sách giao dịch:", error);
     return [];
   }
 }
@@ -190,8 +196,8 @@ async function getTransactionDetails(fundAddress: string): Promise<Transaction[]
 async function getFundBalance(fundAddress: string): Promise<number> {
   const options = {
     method: "GET",
-    url: `${API_URL}/addresses/${fundAddress}`,
-    headers: { Project_id: PROJECT_ID },
+    url: `${BLOCKFROST_API_URL}/addresses/${fundAddress}`,
+    headers: { Project_id: BLOCKFROST_PROJECT_ID },
   };
 
   try {
@@ -199,7 +205,6 @@ async function getFundBalance(fundAddress: string): Promise<number> {
     const lovelace = data.amount.find((amt: any) => amt.unit === "lovelace");
     return lovelace ? Number(lovelace.quantity) / 1000000 : 0;
   } catch (error) {
-    console.error("Lỗi khi lấy số dư từ Blockfrost:", error);
     return 0;
   }
 }
@@ -208,7 +213,7 @@ export default function FundPage() {
   const params = useParams();
   const router = useRouter();
   const fundId = params.id as string;
-  const { wallet } = useWallet();
+  const { wallet, address } = useWallet();
   const { toast } = useToast();
   const [fund, setFund] = useState<Fund | null>(null);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -243,7 +248,7 @@ export default function FundPage() {
     membersCount: number
   ) {
     try {
-      const response = await fetch("http://localhost/danofund/api/get_proposals.php", {
+      const response = await fetch(ENDPOINTS.GET_PROPOSALS, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fundId }),
@@ -290,7 +295,6 @@ export default function FundPage() {
   
       return updatedProposals;
     } catch (error) {
-      console.error("Không thể lấy danh sách đề xuất:", error);
       return [];
     }
   }
@@ -299,8 +303,8 @@ export default function FundPage() {
     const fetchTransactionsCount = async (address: string) => {
       try {
         const { data } = await axios.get<string[]>(
-          `${API_URL}/addresses/${address}/transactions`,
-          { headers: { Project_id: PROJECT_ID } }
+          `${BLOCKFROST_API_URL}/addresses/${address}/transactions`,
+          { headers: { Project_id: BLOCKFROST_PROJECT_ID } }
         );
         return Array.isArray(data) ? data.length : 0;
       } catch {
@@ -311,15 +315,15 @@ export default function FundPage() {
     const fetchApprovedProposalsCount = async (address: string) => {
       try {
         const { data: hashes } = await axios.get<string[]>(
-          `${API_URL}/addresses/${address}/transactions`,
-          { headers: { Project_id: PROJECT_ID } }
+          `${BLOCKFROST_API_URL}/addresses/${address}/transactions`,
+          { headers: { Project_id: BLOCKFROST_PROJECT_ID } }
         );
         let countOut = 0;
         await Promise.all(
           hashes.map(async (txHash) => {
             const utxos = (
-              await axios.get(`${API_URL}/txs/${txHash}/utxos`, {
-                headers: { Project_id: PROJECT_ID },
+              await axios.get(`${BLOCKFROST_API_URL}/txs/${txHash}/utxos`, {
+                headers: { Project_id: BLOCKFROST_PROJECT_ID },
               })
             ).data;
             const totalOut = utxos.outputs
@@ -339,7 +343,7 @@ export default function FundPage() {
 
     const fetchFundDetails = async () => {
       try {
-        const response = await fetch("http://localhost/danofund/api/get_fund_details.php", {
+        const response = await fetch(ENDPOINTS.GET_FUND_DETAILS, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -380,8 +384,7 @@ export default function FundPage() {
         setContributionsByAddress(contributionsByAddress);
         setTotalContributions(totalContributions);
 
-        // Lấy danh sách thành viên từ API get_fund_members.php
-        const membersResponse = await fetch("http://localhost/danofund/api/get_fund_members.php", {
+        const membersResponse = await fetch(ENDPOINTS.GET_FUND_MEMBERS, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -438,15 +441,13 @@ export default function FundPage() {
       } catch (error) {
         setError("Không thể kết nối đến API. Vui lòng kiểm tra kết nối hoặc thử lại sau.");
         setFund(null);
-        console.error("Không thể lấy dữ liệu quỹ:", error);
       }
     };
 
     const checkMembership = async () => {
       if (!wallet) return;
       try {
-        const address = await wallet.getChangeAddress();
-        const response = await fetch("http://localhost/danofund/api/check_membership.php", {
+        const response = await fetch(ENDPOINTS.CHECK_MEMBERSHIP, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fundId, address }),
@@ -459,7 +460,6 @@ export default function FundPage() {
         setIsMember(data.isMember);
       } catch (error) {
         setError("Không thể kiểm tra tư cách thành viên. Vui lòng thử lại sau.");
-        console.error("Lỗi khi kiểm tra tư cách thành viên:", error);
       }
     };
 
@@ -554,7 +554,6 @@ export default function FundPage() {
         description: `Không thể đóng góp: ${error.message}`,
         variant: "destructive",
       });
-      console.error("Lỗi khi đóng góp:", error);
     }
   };
 
@@ -562,8 +561,7 @@ export default function FundPage() {
     if (!wallet || !fund) return;
 
     try {
-      const address = await wallet.getChangeAddress();
-      const joinResponse = await fetch("http://localhost/danofund/api/join_fund.php", {
+      const joinResponse = await fetch(ENDPOINTS.JOIN_FUND, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fundId: fund.id, address }),
@@ -572,7 +570,7 @@ export default function FundPage() {
       if (joinData.error) throw new Error(joinData.error);
 
       if (fund.visibility === "private" && invitationId) {
-        const deleteResponse = await fetch("http://localhost/danofund/api/delete_invitation.php", {
+        const deleteResponse = await fetch(ENDPOINTS.DELETE_INVITATION, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ invitationId }),

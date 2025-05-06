@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { HomeHeader } from '@/components/home/home-header';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Shield, BarChart3, Users } from 'lucide-react';
@@ -21,12 +20,10 @@ export default function Home() {
             <p className="text-lg text-white/80 max-w-3xl mx-auto mb-10">
               Nền tảng quản lý quỹ phi tập trung giúp tổ chức và cá nhân quản lý tài sản một cách minh bạch, hiệu quả và an toàn thông qua công nghệ blockchain.
             </p>
-            <Link href="/dashboard">
               <Button size="lg" variant="secondary" className="group hover:scale-105 transition-transform">
                 Sẵn sàng bắt đầu ngay
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
-            </Link>
           </div>
         </section>
         {/* Features Section */}

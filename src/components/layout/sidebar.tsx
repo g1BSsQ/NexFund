@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn, formatAddress } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -13,26 +13,42 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useWallet } from '@meshsdk/react';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
   className?: string;
 }
 
+
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
-  const { wallet } = useWallet();
-  const [address, setAddress] = useState('');
+  const {disconnect, address } = useWallet();
+  const [showDisconnect, setShowDisconnect] = useState(false);
 
-  useEffect(() => {
-    async function fetchAddress() {
-      if (wallet) {
-        const addr = await wallet.getChangeAddress();
-        setAddress(addr);
+
+  const handleDisconnect = async () => {
+    // 1. Xóa state React
+    setShowDisconnect(false);
+    
+    // 2. Xóa dữ liệu localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('wallet') || key.includes('mesh') || key.includes('cardano'))) {
+        keysToRemove.push(key);
       }
     }
-    fetchAddress();
-  }, [wallet]);
-
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // 3. Ngắt kết nối ví
+    if (disconnect) {
+      await disconnect();
+    }
+    
+    // 4. Chuyển hướng sau khi xong
+    window.location.href = '/'; // Dùng window.location thay vì Link hoặc router để tải lại trang hoàn toàn
+  };
   
   const routes = [
     {
@@ -63,9 +79,14 @@ export function Sidebar({ className }: SidebarProps) {
       className
     )}>
       <div className="p-6">
-        <Link href="/dashboard" className="flex items-center gap-x-2">
-          <span className="text-2xl font-bold gradient-text">DanoFund</span>
-        </Link>
+          <Image
+            src="/logofull.svg" // Đường dẫn đến file logo trong thư mục public
+            alt="DanoFund Logo"
+            width={150}
+            height={40}
+            priority
+            className="h-auto"
+          />
       </div>
       <div className="flex-1 flex flex-col px-3 py-4">
         <nav className="space-y-2">
@@ -84,18 +105,36 @@ export function Sidebar({ className }: SidebarProps) {
           ))}
         </nav>
       </div>
-      <div className="mt-auto p-4 border-t border-primary/10">
-        <div className="flex items-center gap-x-3">
-          <Avatar>
-            <AvatarImage src="/avatar.png" />
-            <AvatarFallback className="bg-primary text-white">BF</AvatarFallback>
-          </Avatar>
+      <div className="mt-auto p-4 border-t border-primary/10 relative">
+        <div 
+          className="flex items-center gap-x-3 cursor-pointer" 
+          onClick={() => setShowDisconnect(!showDisconnect)}
+        >
+              <Avatar >
+                <AvatarImage src={`https://avatar.vercel.sh/${address}`} />
+                <AvatarFallback className="text-2xl">
+                  {address ? address.charAt(0) : "NN"}
+                </AvatarFallback>
+              </Avatar>
           <div className="space-y-1">
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
               {formatAddress(address)}
             </p>
           </div>
         </div>
+        
+        {showDisconnect && (
+
+            <Button 
+              variant="destructive" 
+              size="sm"
+              className="w-full mt-2 flex items-center justify-center"
+              onClick={handleDisconnect}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Ngắt kết nối
+            </Button>
+        )}
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Wallet, UserPlus, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@meshsdk/react";
+import { ENDPOINTS } from "@/lib/config";
 
 interface InviteMemberDialogProps {
   open: boolean;
@@ -65,7 +66,7 @@ export function InviteMemberDialog({ open, onOpenChange, fundId, fundName }: Inv
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost/danofund/api/create_invitation.php", {
+      const response = await fetch(ENDPOINTS.CREATE_INVITATION, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
