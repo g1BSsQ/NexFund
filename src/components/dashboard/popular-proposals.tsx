@@ -8,7 +8,6 @@ type ProposalStatus = "active" | "rejected" | "pending";
 interface Proposal {
   id: string;
   title: string;
-  votes: number;
   status: ProposalStatus;
 }
 
@@ -37,7 +36,6 @@ export function PopularProposals({ proposals }: PopularProposalsProps) {
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <Users className="h-3 w-3 mr-1" />
-              {proposal.votes} phiếu bầu
             </div>
           </div>
           <StatusBadge status={proposal.status} />
