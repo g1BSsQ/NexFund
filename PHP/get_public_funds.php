@@ -10,70 +10,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function logError($message) {
-    $logFile = 'C:/xampp1/htdocs/danofund/api/api_error.log';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
-}
-
-// Kết nối đến cơ sở dữ liệu MySQL
-$host = "localhost";
-$dbname = "danofund";
-$user = "root";
-$password = "";
-
 try {
-    $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = new PDO(
+        "mysql:host=localhost;dbname=danofund;charset=utf8",
+        "root",
+        "",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
 } catch (PDOException $e) {
-    $errorMsg = "Kết nối cơ sở dữ liệu thất bại: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Database connection failed']);
     exit;
 }
 
-// Nhận dữ liệu từ yêu cầu POST (tìm kiếm)
-$input = json_decode(file_get_contents('php://input'), true);
+$input       = json_decode(file_get_contents('php://input'), true);
 $searchQuery = isset($input['search']) ? trim($input['search']) : '';
 
 try {
     $stmt = $db->prepare(
-        "SELECT id, name, description, category, members, status 
-         FROM Funds 
-         WHERE visibility = 'public' 
-         AND (name LIKE :search OR description LIKE :search)"
+        "SELECT id, name, description, category, members, status
+         FROM Funds
+         WHERE visibility = 'public'
+           AND (name LIKE :search OR description LIKE :search)"
     );
-    $searchPattern = "%" . $searchQuery . "%";
-    $stmt->bindParam(':search', $searchPattern, PDO::PARAM_STR);
+    $pattern = '%' . $searchQuery . '%';
+    $stmt->bindParam(':search', $pattern, PDO::PARAM_STR);
     $stmt->execute();
-    $funds = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (!$funds) {
-        http_response_code(200);
-        echo json_encode([]);
-        exit;
+    $funds = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = [];
+
+    foreach ($funds as $f) {
+        $result[] = [
+            'id'          => $f['id'],
+            'name'        => $f['name'],
+            'description' => $f['description'],
+            'category'    => $f['category'],
+            'members'     => (int)$f['members'],
+            'status'      => $f['status'],
+        ];
     }
 
-    $fundsData = array_map(function ($fund) {
-        return [
-            "id" => $fund['id'],
-            "name" => $fund['name'],
-            "description" => $fund['description'],
-            "category" => $fund['category'],
-            "members" => (int) $fund['members'],
-            "status" => $fund['status']
-        ];
-    }, $funds);
-
-    http_response_code(200);
-    echo json_encode($fundsData);
-
+    echo json_encode($result);
 } catch (Exception $e) {
-    $errorMsg = "Lỗi khi lấy danh sách quỹ: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Unable to fetch public funds']);
     exit;
 }
 ?>

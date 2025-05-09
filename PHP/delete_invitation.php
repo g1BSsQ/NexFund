@@ -10,48 +10,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function logError($message) {
-    $logFile = 'C:/xampp1/htdocs/danofund/api/api_error.log';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
-}
-
-// Kết nối đến cơ sở dữ liệu MySQL
-$host = "localhost";
-$dbname = "danofund";
-$user = "root";
-$password = "";
-
 try {
-    $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = new PDO(
+        "mysql:host=localhost;dbname=danofund;charset=utf8",
+        "root",
+        "",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
 } catch (PDOException $e) {
-    $errorMsg = "Kết nối cơ sở dữ liệu thất bại: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Database connection failed']);
     exit;
 }
 
-// Nhận dữ liệu từ yêu cầu POST
 $input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input || !isset($input['invitationId'])) {
-    $errorMsg = "Dữ liệu đầu vào không hợp lệ hoặc thiếu invitationId";
-    logError($errorMsg);
+if (empty($input['invitationId']) || !is_numeric($input['invitationId'])) {
     http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Invalid or missing invitationId']);
     exit;
 }
 
-$invitationId = trim($input['invitationId']);
-if (empty($invitationId) || !is_numeric($invitationId)) {
-    $errorMsg = "invitationId không hợp lệ";
-    logError($errorMsg);
-    http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
-    exit;
-}
+$invitationId = (int) $input['invitationId'];
 
 try {
     $stmt = $db->prepare("DELETE FROM Invitations WHERE id = :invitationId");
@@ -59,20 +38,14 @@ try {
     $stmt->execute();
 
     if ($stmt->rowCount() === 0) {
-        $errorMsg = "Không tìm thấy lời mời với invitationId: $invitationId";
-        logError($errorMsg);
         http_response_code(404);
-        echo json_encode(["error" => $errorMsg]);
-        exit;
+        echo json_encode(['error' => 'Invitation not found']);
+    } else {
+        echo json_encode(['message' => 'Invitation deleted successfully']);
     }
-
-    http_response_code(200);
-    echo json_encode(["message" => "Lời mời đã được xóa"]);
 } catch (Exception $e) {
-    $errorMsg = "Lỗi khi xóa lời mời: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Unable to delete invitation']);
     exit;
 }
 ?>

@@ -1,10 +1,4 @@
 <?php
-// Tắt hiển thị lỗi trực tiếp trên trang
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
-error_reporting(E_ALL);
-
-// Đảm bảo đầu ra là JSON
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -16,111 +10,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function logError($message) {
-    $logFile = 'C:/xampp/htdocs/danofund/api/api_error.log';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
-}
-
-// Kết nối đến cơ sở dữ liệu MySQL
-$host = "localhost";
-$dbname = "danofund";
-$user = "root";
-$password = "";
-
 try {
-    $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = new PDO(
+        "mysql:host=localhost;dbname=danofund;charset=utf8",
+        "root",
+        "",
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
 } catch (PDOException $e) {
-    $errorMsg = "Kết nối cơ sở dữ liệu thất bại: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Database connection failed']);
     exit;
 }
 
-// Nhận dữ liệu từ yêu cầu POST
 $input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input || !isset($input['user_address'])) {
-    $errorMsg = "Dữ liệu đầu vào không hợp lệ hoặc thiếu user_address";
-    logError($errorMsg);
+if (empty($input['user_address'])) {
     http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error' => 'Invalid or missing user_address']);
     exit;
 }
 
 $user_address = trim($input['user_address']);
-if (empty($user_address)) {
-    $errorMsg = "user_address không hợp lệ";
-    logError($errorMsg);
-    http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
-    exit;
-}
 
 try {
     $result = [];
 
-    // 1. Thông tin hồ sơ (profile)
-    // Ngày tham gia (lấy từ bản ghi sớm nhất trong Members)
+    // 1. Profile
     $stmt = $db->prepare(
-        "SELECT MIN(joinDate) as join_date
+        "SELECT MIN(joinDate) AS join_date
          FROM Members
          WHERE address = ?"
     );
     $stmt->execute([$user_address]);
-    $joinDateResult = $stmt->fetch(PDO::FETCH_ASSOC);
-    $join_date = $joinDateResult['join_date'] ? date('d/m/Y', strtotime($joinDateResult['join_date'])) : "Chưa tham gia";
+    $join = $stmt->fetch(PDO::FETCH_ASSOC);
+    $join_date = $join['join_date']
+        ? date('d/m/Y', strtotime($join['join_date']))
+        : "Chưa tham gia";
 
-    // Quỹ quản lý (đếm số quỹ mà user là creator)
-    $stmt = $db->prepare(
-        "SELECT COUNT(*) as count
-         FROM Funds
-         WHERE creator = ?"
-    );
+    $stmt = $db->prepare("SELECT COUNT(*) FROM Funds WHERE creator = ?");
     $stmt->execute([$user_address]);
-    $fund_count = (int) ($stmt->fetchColumn() ?: 0);
+    $fund_count = (int) $stmt->fetchColumn();
 
-    // Đề xuất đã tạo
-    $stmt = $db->prepare(
-        "SELECT COUNT(*) as count
-         FROM Proposals
-         WHERE creator = ?"
-    );
+    $stmt = $db->prepare("SELECT COUNT(*) FROM Proposals WHERE creator = ?");
     $stmt->execute([$user_address]);
-    $proposal_count = (int) ($stmt->fetchColumn() ?: 0);
-
-    // Vai trò
-    $stmt = $db->prepare(
-        "SELECT COUNT(*) as creator_count
-         FROM Funds
-         WHERE creator = ?"
-    );
-    $stmt->execute([$user_address]);
-    $is_creator = $stmt->fetchColumn() > 0;
-
-    $stmt = $db->prepare(
-        "SELECT COUNT(*) as member_count
-         FROM Members
-         WHERE address = ?"
-    );
-    $stmt->execute([$user_address]);
-    $is_member = $stmt->fetchColumn() > 0;
+    $proposal_count = (int) $stmt->fetchColumn();
 
     $roles = [];
-    if ($is_creator) $roles[] = "Quản trị viên";
-    if ($is_member) $roles[] = "Thành viên";
-    $role_string = !empty($roles) ? implode(", ", $roles) : "Không có vai trò";
+    if ($fund_count > 0) $roles[] = "Quản trị viên";
+
+    $stmt = $db->prepare("SELECT COUNT(*) FROM Members WHERE address = ?");
+    $stmt->execute([$user_address]);
+    if ((int)$stmt->fetchColumn() > 0) $roles[] = "Thành viên";
 
     $result['profile'] = [
-        "join_date" => $join_date,
-        "fund_count" => $fund_count,
-        "proposal_count" => $proposal_count,
-        "roles" => $role_string
+        'join_date'      => $join_date,
+        'fund_count'     => $fund_count,
+        'proposal_count' => $proposal_count,
+        'roles'          => $roles ? implode(', ', $roles) : "Không có vai trò"
     ];
 
-    // 2. Danh sách quỹ (funds) - đã loại bỏ current và total
+    // 2. Managed funds
     $stmt = $db->prepare(
         "SELECT id, name, description, category
          FROM Funds
@@ -129,119 +78,81 @@ try {
     $stmt->execute([$user_address]);
     $funds = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $funds_list = array_map(function ($fund) {
+    $result['funds'] = array_map(function($f) {
         return [
-            "id" => $fund['id'],
-            "name" => $fund['name'],
-            "description" => $fund['description'] ?? "Không có mô tả",
-            "category" => $fund['category'] ?? "Không xác định",
-            "role" => "Quản trị viên"
+            'id'          => $f['id'],
+            'name'        => $f['name'],
+            'description' => $f['description'] ?: "Không có mô tả",
+            'category'    => $f['category']    ?: "Không xác định",
+            'role'        => "Quản trị viên"
         ];
     }, $funds);
 
-    $result['funds'] = $funds_list;
-
-    // 3. Danh sách lời mời (invitations)
+    // 3. Invitations
     $stmt = $db->prepare(
-        "SELECT id, fundId, senderAddress, message, date 
-         FROM Invitations 
-         WHERE receiverAddress = ?"
+        "SELECT i.id, i.fundId, f.name AS fundName, i.senderAddress, i.message, i.date
+         FROM Invitations i
+         LEFT JOIN Funds f ON i.fundId = f.id
+         WHERE i.receiverAddress = ?"
     );
     $stmt->execute([$user_address]);
-    $invitations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $invitationsData = array_map(function ($inv) use ($db) {
-        $stmt = $db->prepare("SELECT name FROM Funds WHERE id = :fundId");
-        $stmt->bindParam(':fundId', $inv['fundId'], PDO::PARAM_STR);
-        $stmt->execute();
-        $fund = $stmt->fetch(PDO::FETCH_ASSOC);
-        $fundName = $fund ? $fund['name'] : "Quỹ không xác định";
-
+    $invs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result['invitations'] = array_map(function($inv) {
         return [
-            "id" => $inv['id'],
-            "fundId" => $inv['fundId'],
-            "fundName" => $fundName,
-            "senderAddress" => $inv['senderAddress'],
-            "message" => $inv['message'] ?? "Không có thông điệp",
-            "date" => $inv['date'] ?? date('Y-m-d H:i:s')
+            'id'            => $inv['id'],
+            'fundId'        => $inv['fundId'],
+            'fundName'      => $inv['fundName'] ?: "Quỹ không xác định",
+            'senderAddress' => $inv['senderAddress'],
+            'message'       => $inv['message'] ?: "Không có thông điệp",
+            'date'          => $inv['date']
         ];
-    }, $invitations);
+    }, $invs);
 
-    $result['invitations'] = $invitationsData;
-
-    // 4. Danh sách đề xuất (proposals)
+    // 4. Proposals by user
     $stmt = $db->prepare(
-        "SELECT p.id, p.fundId, p.title, p.description, p.amount, p.votes, p.status, p.deadline, f.id as fundId, f.name as fundName
+        "SELECT p.id, p.title, p.description, p.amount, p.votes, p.status, p.deadline,
+                f.id AS fundId, f.name AS fundName
          FROM Proposals p
          JOIN Funds f ON p.fundId = f.id
          WHERE p.creator = ?"
     );
     $stmt->execute([$user_address]);
-    $proposals = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $proposalsData = array_map(function ($proposal) {
+    $props = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result['proposals'] = array_map(function($p) {
         return [
-            "id" => $proposal['id'],
-            "title" => $proposal['title'] ?? "Không có tiêu đề",
-            "description" => $proposal['description'] ?? "Không có mô tả",
-            "fund" => [
-                "id" => $proposal['fundId'],
-                "name" => $proposal['fundName'] ?? "Quỹ không xác định"
-            ],
-            "amount" => (float) ($proposal['amount'] ?: 0),
-            "votes" => (int) ($proposal['votes'] ?: 0),
-            "status" => $proposal['status'] ?? "pending",
-            "date" => date('Y-m-d', strtotime($proposal['deadline'] ?? 'now')) // Sử dụng deadline làm thời gian tham chiếu
+            'id'      => $p['id'],
+            'title'   => $p['title']       ?: "Không có tiêu đề",
+            'description'=> $p['description'] ?: "Không có mô tả",
+            'fund'    => ['id'=>$p['fundId'],'name'=>$p['fundName']?:"Quỹ không xác định"],
+            'amount'  => (float)$p['amount'],
+            'votes'   => (int)$p['votes'],
+            'status'  => $p['status'],
+            'date'    => date('Y-m-d', strtotime($p['deadline']))
         ];
-    }, $proposals);
+    }, $props);
 
-    $result['proposals'] = $proposalsData;
-
-    // 5. Dữ liệu hoạt động (activity) - 6 tháng gần nhất
-    $activityData = [];
-    $currentMonth = (int) date('m');
-    $currentYear = (int) date('Y');
-
-    for ($i = 5; $i >= 0; $i--) {
-        $month = $currentMonth - $i;
-        $year = $currentYear;
-        if ($month <= 0) {
-            $month += 12;
-            $year--;
-        }
-
-        $startDate = sprintf("%d-%02d-01 00:00:00", $year, $month);
-        $endDate = sprintf("%d-%02d-31 23:59:59", $year, $month);
-
-        // Đếm số đề xuất trong tháng (dựa trên deadline)
+    // 5. Activity last 6 months
+    $activity = [];
+    $m = (int)date('m'); $y = (int)date('Y');
+    for ($i=5; $i>=0; $i--) {
+        $mo = $m - $i; $yr=$y;
+        if ($mo<=0) { $mo+=12; $yr--; }
+        $start = sprintf("%04d-%02d-01", $yr, $mo);
+        $end   = sprintf("%04d-%02d-31", $yr, $mo);
         $stmt = $db->prepare(
-            "SELECT COUNT(*) as count
-             FROM Proposals
-             WHERE creator = ? AND deadline BETWEEN ? AND ?"
+            "SELECT COUNT(*) FROM Proposals
+             WHERE creator=? AND deadline BETWEEN ? AND ?"
         );
-        $stmt->execute([$user_address, $startDate, $endDate]);
-        $proposals_count = (int) ($stmt->fetchColumn() ?: 0);
-
-        // Đếm số đóng góp (giả sử bảng Contributions không tồn tại)
-
-
-        $activityData[] = [
-            "name" => "T" . $month,
-            "proposals" => $proposals_count,
-        ];
+        $stmt->execute([$user_address, "$start 00:00:00", "$end 23:59:59"]);
+        $cnt = (int)$stmt->fetchColumn();
+        $activity[] = ['name'=>"T$mo",'proposals'=>$cnt];
     }
+    $result['activity'] = $activity;
 
-    $result['activity'] = $activityData;
-
-    // Trả về tất cả dữ liệu
-    http_response_code(200);
     echo json_encode($result);
-
 } catch (Exception $e) {
-    $errorMsg = "Không thể lấy dữ liệu: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(['error'=>'Unable to retrieve user data']);
     exit;
 }
 ?>

@@ -10,110 +10,106 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function logError($message) {
-    $logFile = 'C:/xampp1/htdocs/danofund/api/api_error.log';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
-}
-
-// Kết nối đến cơ sở dữ liệu MySQL
-$host = "localhost";
-$dbname = "danofund";
-$user = "root";
-$password = "";
-
+// Kết nối đến cơ sở dữ liệu
 try {
-    $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = new PDO("mysql:host=localhost;dbname=danofund;charset=utf8", "root", "", [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ]);
 } catch (PDOException $e) {
-    $errorMsg = "Kết nối cơ sở dữ liệu thất bại: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Database connection failed"]);
     exit;
 }
 
-// Nhận dữ liệu từ yêu cầu POST
+// Nhận và kiểm tra dữ liệu đầu vào
 $input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input || !isset($input['fundId']) || !isset($input['senderAddress']) || !isset($input['receiverAddress']) || !isset($input['message'])) {
-    $errorMsg = "Dữ liệu đầu vào không hợp lệ hoặc thiếu trường bắt buộc";
-    logError($errorMsg);
+if (
+    !$input ||
+    empty($input['fundId']) ||
+    empty($input['senderAddress']) ||
+    empty($input['receiverAddress']) ||
+    !isset($input['message'])
+) {
     http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Invalid or missing fields"]);
     exit;
 }
 
-$fundId = trim($input['fundId']);
-$senderAddress = trim($input['senderAddress']);
-$receiverAddress = trim($input['receiverAddress']);
-$message = trim($input['message']);
+$fundId         = trim($input['fundId']);
+$senderAddress  = trim($input['senderAddress']);
+$receiverAddress= trim($input['receiverAddress']);
+$message        = trim($input['message']);
 
-if (empty($fundId) || !preg_match('/^[a-zA-Z0-9-_]+$/', $fundId) || empty($senderAddress) || empty($receiverAddress)) {
-    $errorMsg = "fundId, senderAddress hoặc receiverAddress không hợp lệ";
-    logError($errorMsg);
+if (
+    !preg_match('/^[a-zA-Z0-9-_]+$/', $fundId) ||
+    empty($senderAddress) ||
+    empty($receiverAddress)
+) {
     http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Invalid fundId or addresses"]);
     exit;
 }
 
-// Kiểm tra quỹ có tồn tại và là private
+// Kiểm tra quỹ tồn tại
 $stmt = $db->prepare("SELECT visibility FROM Funds WHERE id = :fundId");
 $stmt->bindParam(':fundId', $fundId, PDO::PARAM_STR);
 $stmt->execute();
 $fund = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$fund) {
-    $errorMsg = "Không tìm thấy quỹ với fundId: $fundId";
-    logError($errorMsg);
     http_response_code(404);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Fund not found"]);
     exit;
 }
 
-if ($fund['visibility'] === "public" && $senderAddress !== $receiverAddress) {
-    // Cho phép gửi lời mời cho quỹ công khai, nhưng không yêu cầu kiểm tra thành viên
-} elseif ($fund['visibility'] === "private") {
-    // Kiểm tra sender là thành viên của quỹ
-    $stmt = $db->prepare("SELECT COUNT(*) FROM Members WHERE fundId = :fundId AND address = :senderAddress");
-    $stmt->bindParam(':fundId', $fundId, PDO::PARAM_STR);
-    $stmt->bindParam(':senderAddress', $senderAddress, PDO::PARAM_STR);
+// Nếu quỹ riêng tư, kiểm tra sender là thành viên
+if ($fund['visibility'] === "private") {
+    $stmt = $db->prepare("
+        SELECT COUNT(*) 
+        FROM Members 
+        WHERE fundId = :fundId 
+          AND address = :senderAddress
+    ");
+    $stmt->bindParam(':fundId',        $fundId,         PDO::PARAM_STR);
+    $stmt->bindParam(':senderAddress', $senderAddress,  PDO::PARAM_STR);
     $stmt->execute();
     if ($stmt->fetchColumn() == 0) {
-        $errorMsg = "Chỉ thành viên quỹ mới có thể gửi lời mời cho quỹ riêng tư";
-        logError($errorMsg);
         http_response_code(403);
-        echo json_encode(["error" => $errorMsg]);
+        echo json_encode(["error" => "Only members can invite to this private fund"]);
         exit;
     }
 }
 
+// Tạo lời mời
 try {
     $db->beginTransaction();
-
     $stmt = $db->prepare(
-        "INSERT INTO Invitations (fundId, senderAddress, receiverAddress, message, date) 
+        "INSERT INTO Invitations 
+         (fundId, senderAddress, receiverAddress, message, date) 
          VALUES (:fundId, :senderAddress, :receiverAddress, :message, :date)"
     );
-    $date = date('Y-m-d');
+    $today = date('Y-m-d');
     $stmt->execute([
-        ':fundId' => $fundId,
-        ':senderAddress' => $senderAddress,
-        ':receiverAddress' => $receiverAddress,
-        ':message' => $message,
-        ':date' => $date
+        ':fundId'           => $fundId,
+        ':senderAddress'    => $senderAddress,
+        ':receiverAddress'  => $receiverAddress,
+        ':message'          => $message,
+        ':date'             => $today
     ]);
-
+    $invitationId = $db->lastInsertId();
     $db->commit();
 
     http_response_code(200);
-    echo json_encode(["message" => "Lời mời đã được gửi", "invitationId" => $db->lastInsertId()]);
+    echo json_encode([
+        "message"       => "Invitation sent successfully",
+        "invitationId"  => $invitationId
+    ]);
 } catch (Exception $e) {
-    $db->rollBack();
-    $errorMsg = "Không thể tạo lời mời: " . $e->getMessage();
-    logError($errorMsg);
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Unable to create invitation"]);
     exit;
 }
 ?>

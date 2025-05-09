@@ -1,15 +1,11 @@
 import {
     BlockfrostProvider,
     BrowserWallet,
-    IWallet,
     MeshTxBuilder,
-    UTxO
   } from "@meshsdk/core";
-
-  import { applyParamsToScript } from "@meshsdk/core-csl";
-
   import plutus from '../../smartcontract/plutus.json';
-  export const blockchainProvider = new BlockfrostProvider('previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc');
+  import {BLOCKFROST_PROJECT_ID} from "@/lib/config";
+  export const blockchainProvider = new BlockfrostProvider(BLOCKFROST_PROJECT_ID);
   
   export function readValidator(title: string): string {
       const validator = plutus.validators.find(v => v.title === title);

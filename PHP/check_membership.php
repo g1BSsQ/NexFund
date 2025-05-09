@@ -10,65 +10,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function logError($message) {
-    $logFile = 'C:/xampp1/htdocs/danofund/api/api_error.log';
-    $timestamp = date('Y-m-d H:i:s');
-    file_put_contents($logFile, "[$timestamp] $message\n", FILE_APPEND);
-}
-
-// Kết nối đến cơ sở dữ liệu MySQL
-$host = "localhost";
-$dbname = "danofund";
-$user = "root";
+// Kết nối cơ sở dữ liệu
+$host     = "localhost";
+$dbname   = "danofund";
+$user     = "root";
 $password = "";
 
 try {
     $db = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    $errorMsg = "Kết nối cơ sở dữ liệu thất bại: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Database connection failed"]);
     exit;
 }
 
-// Nhận dữ liệu từ yêu cầu POST
+// Nhận và kiểm tra dữ liệu đầu vào
 $input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input || !isset($input['fundId']) || !isset($input['address'])) {
-    $errorMsg = "Dữ liệu đầu vào không hợp lệ hoặc thiếu trường bắt buộc";
-    logError($errorMsg);
+if (
+    !$input ||
+    empty($input['fundId']) ||
+    empty($input['address']) ||
+    !preg_match('/^[a-zA-Z0-9-_]+$/', $input['fundId'])
+) {
     http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Invalid fundId or address"]);
     exit;
 }
 
-$fundId = trim($input['fundId']);
-$address = trim($input['address']);
-
-if (empty($fundId) || !preg_match('/^[a-zA-Z0-9-_]+$/', $fundId) || empty($address)) {
-    $errorMsg = "fundId hoặc address không hợp lệ";
-    logError($errorMsg);
-    http_response_code(400);
-    echo json_encode(["error" => $errorMsg]);
-    exit;
-}
+$fundId  = $input['fundId'];
+$address = $input['address'];
 
 try {
-    $stmt = $db->prepare("SELECT COUNT(*) FROM Members WHERE fundId = :fundId AND address = :address");
-    $stmt->bindParam(':fundId', $fundId, PDO::PARAM_STR);
+    $stmt = $db->prepare("
+        SELECT COUNT(*) 
+        FROM Members 
+        WHERE fundId = :fundId 
+          AND address = :address
+    ");
+    $stmt->bindParam(':fundId',  $fundId,  PDO::PARAM_STR);
     $stmt->bindParam(':address', $address, PDO::PARAM_STR);
     $stmt->execute();
-    $isMember = $stmt->fetchColumn() > 0;
 
-    http_response_code(200);
+    $isMember = $stmt->fetchColumn() > 0;
     echo json_encode(["isMember" => $isMember]);
 } catch (Exception $e) {
-    $errorMsg = "Lỗi khi kiểm tra tư cách thành viên: " . $e->getMessage();
-    logError($errorMsg);
     http_response_code(500);
-    echo json_encode(["error" => $errorMsg]);
+    echo json_encode(["error" => "Failed to check membership"]);
     exit;
 }
 ?>

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { blockchainProvider } from '@/cardano/adapter';
 import { deserializeDatum } from '@meshsdk/core';
 
-const PROJECT_ID = 'previewxOC094xKrrjbuvWPhJ8bkiSoABW4jpDc';
+import { BLOCKFROST_PROJECT_ID, BLOCKFROST_API_URL } from '@/lib/config';
 
 interface VoteResult {
   yesVoters: { address: string; txHash: string }[];
@@ -13,8 +13,8 @@ interface VoteResult {
 export async function fetchVoter(address: string): Promise<VoteResult> {
   const options = {
     method: 'GET',
-    url: `https://cardano-preview.blockfrost.io/api/v0/addresses/${address}/txs`,
-    headers: { project_id: PROJECT_ID },
+    url: `${BLOCKFROST_API_URL}/addresses/${address}/txs`,
+    headers: { project_id: BLOCKFROST_PROJECT_ID },
     params: {
       order: 'desc',
       count: '100',

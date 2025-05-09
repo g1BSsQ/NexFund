@@ -3,16 +3,12 @@ import {
   Asset,
   deserializeAddress,
   mConStr0,
-  MeshTxBuilder,
-  MeshValue,
   serializePlutusScript,
   stringToHex,
-  Transaction,
   BrowserWallet
 } from "@meshsdk/core";
 
 import {
-  blockchainProvider,
   getWalletInfoForTx,
   readValidator,
   getTxBuilder
